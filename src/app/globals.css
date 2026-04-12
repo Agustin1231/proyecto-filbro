@@ -1,0 +1,132 @@
+@import "tailwindcss";
+
+/* ── Pulso Design System ──────────────────────────────────────── */
+@theme inline {
+  /* Base */
+  --color-background:  var(--background);
+  --color-foreground:  var(--foreground);
+
+  /* Pulso Palette */
+  --color-coral:         #ff6b6b;
+  --color-coral-dark:    #c0392b;
+  --color-coral-light:   #ff9f9f;
+  --color-teal:          #00d4aa;
+  --color-teal-dark:     #00a884;
+  --color-teal-light:    #7fffea;
+  --color-amber:         #f0a500;
+  --color-amber-light:   #ffe08a;
+  --color-purple:        #a371f7;
+  --color-purple-light:  #d2b4ff;
+  --color-blue:          #58a6ff;
+  --color-blue-light:    #cae8ff;
+  --color-green:         #3fb950;
+  --color-green-light:   #aff5b4;
+
+  /* Surfaces (dark first) */
+  --color-surface:       #161b22;
+  --color-surface-2:     #1c2333;
+  --color-border:        #30363d;
+  --color-muted:         #8b949e;
+
+  /* shadcn/ui compatible tokens */
+  --color-card:          var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover:       var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary:       var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary:     var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent:        var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive:   var(--destructive);
+  --color-input:         var(--input);
+  --color-ring:          var(--ring);
+
+  /* Border radius */
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  14px;
+  --radius-xl:  20px;
+  --radius-full: 9999px;
+
+  /* Typography */
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* ── CSS Variables ────────────────────────────────────────────── */
+:root {
+  --background:            #0d1117;
+  --foreground:            #e6edf3;
+  --card:                  #161b22;
+  --card-foreground:       #e6edf3;
+  --popover:               #1c2333;
+  --popover-foreground:    #e6edf3;
+  --primary:               #ff6b6b;
+  --primary-foreground:    #ffffff;
+  --secondary:             #1c2333;
+  --secondary-foreground:  #e6edf3;
+  --muted:                 #1c2333;
+  --muted-foreground:      #8b949e;
+  --accent:                #00d4aa;
+  --accent-foreground:     #0d1117;
+  --destructive:           #f85149;
+  --border:                #30363d;
+  --input:                 #30363d;
+  --ring:                  #ff6b6b;
+  --radius:                10px;
+}
+
+/* ── Base Styles ─────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  height: 100%;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), 'Inter', system-ui, sans-serif;
+  line-height: 1.6;
+  min-height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Scrollbar ───────────────────────────────────────────────── */
+::-webkit-scrollbar        { width: 6px; height: 6px; }
+::-webkit-scrollbar-track  { background: var(--background); }
+::-webkit-scrollbar-thumb  { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }
+
+/* ── Animations ──────────────────────────────────────────────── */
+@keyframes pulse-beat {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.08); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+.animate-pulse-beat    { animation: pulse-beat 1.5s ease-in-out infinite; }
+.animate-fade-in       { animation: fade-in 0.4s ease-out forwards; }
+.animate-slide-in-left { animation: slide-in-left 0.3s ease-out forwards; }
+.animate-blink         { animation: blink-cursor 1s infinite; }
