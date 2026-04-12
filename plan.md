@@ -150,11 +150,17 @@ GEMINI_API_KEY=
 6. Futuro: opción de "guardar progreso" vinculando un email al UUID
 
 ### Tablas en Supabase
-- `metricas` — registros de métricas cardiovasculares
-- `habitos` — seguimiento diario de hábitos
-- `recetas_guardadas` — recetas con imagen guardadas por el usuario
-- `rutinas` — planes de ejercicio generados
-- `perfil_usuario` — perfil anónimo del usuario (edad, objetivos, disclaimer aceptado)
+
+| Tabla | Descripción |
+|---|---|
+| `metricas` | Registros diarios de métricas cardiovasculares (upsert por día) |
+| `habitos` | Hábitos fijos por día: ejercicio, alimentacion, sueno, medicamento, hidratacion |
+| `habitos_definicion` | Hábitos personalizados del usuario (nombre + emoji) |
+| `habitos_registro` | Completados diarios de hábitos custom + ejercicios de rutina |
+| `recetas_guardadas` | Recetas guardadas con imagen, calificación de estrellas |
+| `listas_mercado` | Listas de compras generadas por IA (checklist persistido en localStorage) |
+| `rutinas` | Planes de ejercicio semanales generados por IA (JSON con ejercicios por bloque) |
+| `perfil_usuario` | Perfil anónimo del usuario (edad, objetivos, disclaimer aceptado) |
 
 ---
 
