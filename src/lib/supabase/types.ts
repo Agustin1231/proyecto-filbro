@@ -21,66 +21,129 @@ export interface Database {
       metricas: {
         Row: {
           id:         string;
-          uid:        string;        // UUID anónimo del usuario
+          uid:        string;
           tipo:       MetricaType;
           valor:      number;
           unidad:     string;
           notas:      string | null;
           created_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["metricas"]["Row"], "id" | "created_at">;
-        Update: Partial<Database["public"]["Tables"]["metricas"]["Insert"]>;
+        Insert: {
+          id?:        string;
+          uid:        string;
+          tipo:       MetricaType;
+          valor:      number;
+          unidad:     string;
+          notas?:     string | null;
+          created_at?: string;
+        };
+        Update: {
+          uid?:       string;
+          tipo?:      MetricaType;
+          valor?:     number;
+          unidad?:    string;
+          notas?:     string | null;
+        };
       };
       habitos: {
         Row: {
           id:         string;
           uid:        string;
-          fecha:      string;        // YYYY-MM-DD
+          fecha:      string;
           tipo:       HabitoTipo;
           completado: boolean;
           notas:      string | null;
           created_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["habitos"]["Row"], "id" | "created_at">;
-        Update: Partial<Database["public"]["Tables"]["habitos"]["Insert"]>;
+        Insert: {
+          id?:        string;
+          uid:        string;
+          fecha:      string;
+          tipo:       HabitoTipo;
+          completado?: boolean;
+          notas?:     string | null;
+          created_at?: string;
+        };
+        Update: {
+          completado?: boolean;
+          notas?:     string | null;
+        };
       };
       recetas_guardadas: {
         Row: {
-          id:          string;
-          uid:         string;
-          titulo:      string;
-          contenido:   string;       // markdown de la receta
-          imagen_url:  string | null;
+          id:           string;
+          uid:          string;
+          titulo:       string;
+          contenido:    string;
+          imagen_url:   string | null;
           ingredientes: string[];
-          created_at:  string;
+          created_at:   string;
         };
-        Insert: Omit<Database["public"]["Tables"]["recetas_guardadas"]["Row"], "id" | "created_at">;
-        Update: Partial<Database["public"]["Tables"]["recetas_guardadas"]["Insert"]>;
+        Insert: {
+          id?:          string;
+          uid:          string;
+          titulo:       string;
+          contenido:    string;
+          imagen_url?:  string | null;
+          ingredientes?: string[];
+          created_at?:  string;
+        };
+        Update: {
+          titulo?:      string;
+          contenido?:   string;
+          imagen_url?:  string | null;
+          ingredientes?: string[];
+        };
       };
       rutinas: {
         Row: {
           id:          string;
           uid:         string;
           nombre:      string;
-          contenido:   string;       // JSON stringificado del plan
+          contenido:   unknown;
           activa:      boolean;
           created_at:  string;
         };
-        Insert: Omit<Database["public"]["Tables"]["rutinas"]["Row"], "id" | "created_at">;
-        Update: Partial<Database["public"]["Tables"]["rutinas"]["Insert"]>;
+        Insert: {
+          id?:         string;
+          uid:         string;
+          nombre:      string;
+          contenido:   unknown;
+          activa?:     boolean;
+          created_at?: string;
+        };
+        Update: {
+          nombre?:     string;
+          contenido?:  unknown;
+          activa?:     boolean;
+        };
       };
       perfil_usuario: {
         Row: {
-          uid:             string;   // PK = UUID anónimo
-          edad:            number | null;
-          genero:          string | null;
+          uid:              string;
+          edad:             number | null;
+          genero:           string | null;
           condicion_fisica: string | null;
-          objetivos:       string[] | null;
-          disclaimer_ok:   boolean;
-          updated_at:      string;
+          objetivos:        string[] | null;
+          disclaimer_ok:    boolean;
+          updated_at:       string;
         };
-        Insert: Omit<Database["public"]["Tables"]["perfil_usuario"]["Row"], "updated_at">;
-        Update: Partial<Database["public"]["Tables"]["perfil_usuario"]["Insert"]>;
+        Insert: {
+          uid:              string;
+          edad?:            number | null;
+          genero?:          string | null;
+          condicion_fisica?: string | null;
+          objetivos?:       string[] | null;
+          disclaimer_ok?:   boolean;
+          updated_at?:      string;
+        };
+        Update: {
+          edad?:            number | null;
+          genero?:          string | null;
+          condicion_fisica?: string | null;
+          objetivos?:       string[] | null;
+          disclaimer_ok?:   boolean;
+        };
       };
     };
   };
