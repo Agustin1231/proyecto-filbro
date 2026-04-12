@@ -24,6 +24,22 @@ function extraerTitulo(texto: string): string {
   return match?.[1]?.trim() ?? "Receta cardioprotectora";
 }
 
+function extraerIngredientes(texto: string, fallback: string): string[] {
+  // Intentar extraer de la sección ### Ingredientes del texto generado
+  const seccion = texto.match(/###\s+Ingredientes\s*\n([\s\S]*?)(?=###|$)/i);
+  if (seccion) {
+    const items = seccion[1]
+      .split("\n")
+      .filter((l) => l.trim().startsWith("- "))
+      .map((l) => l.replace(/^-\s+/, "").split("(")[0].trim())
+      .filter(Boolean)
+      .slice(0, 12);
+    if (items.length > 0) return items;
+  }
+  // Fallback: usar lo que escribió el usuario
+  return fallback.split(/[,\n]+/).map((i) => i.trim()).filter(Boolean);
+}
+
 function renderInline(text: string): React.ReactNode {
   const parts = text.split(/(\*\*[^*]+\*\*|\*[^*\n]+\*)/g);
   if (parts.length === 1) return text;
@@ -258,7 +274,7 @@ export function RecetasClient() {
     if (!uid || !recetaTexto || guardando || guardada) return;
     setGuardando(true);
     const titulo = extraerTitulo(recetaTexto);
-    const ingredientesArray = ingredientes.split(/[,\n]+/).map((i) => i.trim()).filter(Boolean);
+    const ingredientesArray = extraerIngredientes(recetaTexto, ingredientes);
     let urlFinal: string | null = imagenUrl;
     if (imagenUrl?.startsWith("data:")) {
       const uploaded = await uploadRecetaImagen(uid, imagenUrl);
