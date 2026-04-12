@@ -725,6 +725,7 @@ function MercadoView({ ingredientesRecetas }: { ingredientesRecetas: string[] })
   const [chatRespuesta, setChatRespuesta] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [guardada, setGuardada] = useState(false);
+  const [errorGuardar, setErrorGuardar] = useState<string | null>(null);
   const [listas, setListas] = useState<ListaMercadoRow[]>([]);
   const [cargandoListas, setCargandoListas] = useState(false);
   const [vistaGuardadas, setVistaGuardadas] = useState(false);
@@ -790,11 +791,17 @@ function MercadoView({ ingredientesRecetas }: { ingredientesRecetas: string[] })
   };
 
   const handleGuardar = async () => {
-    if (!uid || !listaTexto || guardando || guardada) return;
+    const texto = listaRef.current;
+    if (!uid || !texto || guardando || guardada) return;
     setGuardando(true);
+    setErrorGuardar(null);
     const nombre = `Lista ${periodo} — ${new Date().toLocaleDateString("es-ES", { day: "numeric", month: "short" })}`;
-    const { error } = await guardarListaMercado(uid, nombre, periodo, listaTexto);
-    if (!error) setGuardada(true);
+    const { error } = await guardarListaMercado(uid, nombre, periodo, texto);
+    if (!error) {
+      setGuardada(true);
+    } else {
+      setErrorGuardar(`Error al guardar: ${error}`);
+    }
     setGuardando(false);
   };
 
@@ -857,19 +864,24 @@ function MercadoView({ ingredientesRecetas }: { ingredientesRecetas: string[] })
                 {formatearContenido(textoMostrado)}
                 {escribiendo && <span className="inline-block w-0.5 h-4 bg-teal ml-0.5 animate-blink align-middle" />}
 
-                {estado === "completo" && !escribiendo && (
-                  <div className="flex items-center gap-3 pt-3 mt-2 border-t border-border/50">
-                    {!guardada ? (
-                      <Button onClick={handleGuardar} disabled={guardando || !uid} variant="ghost" className="gap-2 text-teal border border-teal/30 hover:bg-teal/10">
-                        {guardando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bookmark className="h-4 w-4" />}
-                        {guardando ? "Guardando..." : "Guardar lista"}
-                      </Button>
-                    ) : (
-                      <div className="flex items-center gap-2 text-sm text-teal"><Bookmark className="h-4 w-4 fill-teal" />Lista guardada</div>
+                {estado === "completo" && (
+                  <div className="space-y-2 pt-3 mt-2 border-t border-border/50">
+                    <div className="flex items-center gap-3">
+                      {!guardada ? (
+                        <Button onClick={handleGuardar} disabled={guardando} variant="ghost" className="gap-2 text-teal border border-teal/30 hover:bg-teal/10">
+                          {guardando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bookmark className="h-4 w-4" />}
+                          {guardando ? "Guardando..." : "Guardar lista"}
+                        </Button>
+                      ) : (
+                        <div className="flex items-center gap-2 text-sm text-teal"><Bookmark className="h-4 w-4 fill-teal" />Lista guardada</div>
+                      )}
+                      <button onClick={() => { setEstado("idle"); setListaTexto(""); setTextoMostrado(""); listaRef.current = ""; setChatMsgs([]); setGuardada(false); setErrorGuardar(null); }} className="ml-auto text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
+                        <RefreshCw className="h-3 w-3" /> Nueva lista
+                      </button>
+                    </div>
+                    {errorGuardar && (
+                      <p className="text-xs text-coral bg-coral/10 border border-coral/20 rounded-lg px-3 py-2">{errorGuardar}</p>
                     )}
-                    <button onClick={() => { setEstado("idle"); setListaTexto(""); setTextoMostrado(""); listaRef.current = ""; setChatMsgs([]); setGuardada(false); }} className="ml-auto text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
-                      <RefreshCw className="h-3 w-3" /> Nueva lista
-                    </button>
                   </div>
                 )}
               </div>
