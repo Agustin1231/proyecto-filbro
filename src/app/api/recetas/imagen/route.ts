@@ -1,4 +1,4 @@
-import { GoogleGenAI, Modality } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 
 export const runtime = "nodejs";
 
@@ -17,28 +17,24 @@ export async function POST(req: Request) {
   try {
     const ai = new GoogleGenAI({ apiKey });
 
-    const prompt = `Professional food photography of "${titulo}". ${descripcion ?? "Healthy cardiovascular dish, Mediterranean style"}. Shot from above, natural lighting, on a rustic wooden table, vibrant colors, appetizing presentation, high resolution.`;
+    const prompt = `Professional food photography of "${titulo}". ${
+      descripcion ?? "Healthy cardiovascular dish, Mediterranean style"
+    }. Shot from above, natural lighting, rustic wooden table, vibrant colors, appetizing, high resolution.`;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-preview-image-generation",
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      config: {
-        responseModalities: [Modality.IMAGE],
-      },
+    const response = await ai.models.generateImages({
+      model: "imagen-3.0-generate-002",
+      prompt,
+      config: { numberOfImages: 1 },
     });
 
-    const parts = response.candidates?.[0]?.content?.parts;
-    const imagePart = parts?.find((p) => p.inlineData);
+    const imageBytes = response.generatedImages?.[0]?.image?.imageBytes;
 
-    if (!imagePart?.inlineData?.data) {
+    if (!imageBytes) {
       return Response.json({ error: "No se pudo generar la imagen" }, { status: 500 });
     }
 
-    const mimeType = imagePart.inlineData.mimeType ?? "image/png";
-    const imageBase64 = imagePart.inlineData.data;
-
     return Response.json({
-      imagen: `data:${mimeType};base64,${imageBase64}`,
+      imagen: `data:image/png;base64,${imageBytes}`,
     });
   } catch (err) {
     console.error("Error generando imagen:", err);

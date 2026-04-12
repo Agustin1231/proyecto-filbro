@@ -66,8 +66,10 @@ export function DashboardClient() {
         </h3>
         <TarjetasResumen
           metricas={ultimas}
+          uid={uid}
           onSelect={handleSeleccion}
           seleccion={seleccion}
+          onActualizar={cargarDatos}
         />
       </div>
 
