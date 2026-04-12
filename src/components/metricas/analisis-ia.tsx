@@ -25,7 +25,7 @@ function renderInline(text: string): React.ReactNode {
 }
 
 function formatearContenido(texto: string): React.ReactNode {
-  const lineas = texto.split("\n");
+  const lineas = texto.split("\n").filter((l) => !l.match(/^#\s/));
   return lineas.map((linea, i) => {
     if (linea.trim() === "---")
       return <hr key={i} className="border-border/40 my-3" />;
