@@ -246,6 +246,10 @@ export function RutinasClient() {
           nivel: r.nivel, tiempo: r.tiempo, lugar: r.lugar, limitacion: r.limitacion,
           metricas: { sueno, estres },
           historial_count: guardadas.length,
+          ejercicios_previos: guardadas
+            .slice(0, 5)
+            .flatMap((r) => r.contenido.ejercicios?.map((e) => e.nombre) ?? [])
+            .filter((n, i, arr) => arr.indexOf(n) === i),
         }),
       });
       if (!res.ok || !res.body) throw new Error("Error al conectar con el asistente");

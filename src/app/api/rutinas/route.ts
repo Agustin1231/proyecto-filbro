@@ -43,13 +43,14 @@ REGLAS ESTRICTAS:
 - Si el estrés es alto (mayor a 5/10): incluye más ejercicios de respiración y ritmo suave, menciona cómo el ejercicio baja el cortisol
 - Si durmió poco Y tiene estrés alto: rutina de recuperación activa, nada de alta intensidad
 - Considera el historial: si lleva varias rutinas, aumenta progresivamente (más series, menos descanso, nuevos ejercicios)
+- Si se indica "Ejercicios usados anteriormente", OBLIGATORIO usar ejercicios distintos o variantes claramente diferentes (ej: si usó "Sentadillas", usa "Sentadillas sumo" o "Zancadas" en cambio)
 - Los tiempos de cada bloque deben sumar el total indicado
 - El campo "Descanso" SIEMPRE en segundos como número entero (ej: Descanso: 60 seg)
 - Responde siempre en español
 - NUNCA menciones diagnósticos ni recetes para condiciones médicas`;
 
 export async function POST(req: Request) {
-  const { nivel, tiempo, lugar, limitacion, metricas, historial_count } = await req.json();
+  const { nivel, tiempo, lugar, limitacion, metricas, historial_count, ejercicios_previos } = await req.json();
 
   if (!nivel || !tiempo || !lugar) {
     return new Response("Perfil incompleto", { status: 400 });
@@ -63,6 +64,9 @@ export async function POST(req: Request) {
   if (sueno !== undefined) contextoParts.push(`- Sueño de anoche: ${sueno}h${sueno < 7 ? " (por debajo de lo recomendado)" : ""}`);
   if (estres !== undefined) contextoParts.push(`- Nivel de estrés hoy: ${estres}/10${estres > 5 ? " (elevado)" : ""}`);
   contextoParts.push(`- Rutinas completadas hasta hoy: ${historial_count ?? 0} (semana ${semana} del plan)`);
+  if (ejercicios_previos?.length > 0) {
+    contextoParts.push(`- Ejercicios usados en rutinas anteriores (evitar repetir o variar significativamente): ${ejercicios_previos.join(", ")}`);
+  }
 
   const perfil = `
 Perfil del usuario:
