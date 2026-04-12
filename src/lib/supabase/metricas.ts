@@ -11,7 +11,7 @@ export interface MetricaRow {
   created_at: string;
 }
 
-/** Guarda una nueva métrica */
+/** Guarda o actualiza la métrica de hoy (upsert por día) */
 export async function guardarMetrica(
   uid:    string,
   tipo:   MetricaType,
@@ -19,6 +19,29 @@ export async function guardarMetrica(
   unidad: string,
   notas?: string
 ): Promise<{ error: string | null }> {
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const manana = new Date(hoy);
+  manana.setDate(manana.getDate() + 1);
+
+  // Buscar si ya existe un registro de este tipo para hoy
+  const { data: existente } = await supabase
+    .from("metricas")
+    .select("id")
+    .eq("uid", uid)
+    .eq("tipo", tipo)
+    .gte("created_at", hoy.toISOString())
+    .lt("created_at", manana.toISOString())
+    .single();
+
+  if (existente?.id) {
+    const { error } = await supabase
+      .from("metricas")
+      .update({ valor, unidad, notas: notas ?? null })
+      .eq("id", existente.id);
+    return { error: error?.message ?? null };
+  }
+
   const { error } = await supabase.from("metricas").insert({
     uid, tipo, valor, unidad, notas: notas ?? null,
   });
