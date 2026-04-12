@@ -44,8 +44,6 @@
     "tailwindcss": "^4",
     "@tailwindcss/postcss": "^4",
     "eslint": "^9",
-    "eslint-config-next": "^15.3.0",
-    "pg": "^8.13.3",
-    "dotenv": "^16.4.7"
+    "eslint-config-next": "^15.3.0"
   }
 }

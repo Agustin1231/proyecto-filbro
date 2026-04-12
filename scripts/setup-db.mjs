@@ -1,12 +1,11 @@
 /**
  * Pulso — Setup automático de base de datos Supabase
- * Se ejecuta automáticamente en cada deploy (antes de next build).
  *
- * Requiere en variables de entorno (Coolify o .env.local):
- *   SUPABASE_DB_URL=postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres
+ * Usa la Supabase Management API — no requiere conexión directa a PostgreSQL.
  *
- * La connection string la encuentras en:
- *   Supabase Dashboard → Settings → Database → Connection string → URI
+ * Requiere en variables de entorno (Coolify):
+ *   SUPABASE_ACCESS_TOKEN  → Supabase Dashboard → Account → Access Tokens → Generate new token
+ *   NEXT_PUBLIC_SUPABASE_URL → ya la tienes configurada
  */
 
 import { readFileSync } from "fs";
@@ -15,99 +14,106 @@ import { dirname, join } from "path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// Cargar .env.local solo en desarrollo (en Coolify las vars ya están en el entorno)
+// Cargar .env.local solo en local (en Coolify las vars ya están en el entorno)
 try {
   const { config } = await import("dotenv");
   config({ path: join(__dirname, "../.env.local") });
-} catch {
-  // dotenv no disponible — no pasa nada, usamos process.env directo
+} catch { /* ignorar */ }
+
+async function runQuery(projectRef, token, query) {
+  const res = await fetch(
+    `https://api.supabase.com/v1/projects/${projectRef}/database/query`,
+    {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ query }),
+    }
+  );
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`HTTP ${res.status}: ${body}`);
+  }
+
+  return res.json();
 }
 
 async function main() {
-  const dbUrl = process.env.SUPABASE_DB_URL;
+  const supabaseUrl  = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const accessToken  = process.env.SUPABASE_ACCESS_TOKEN;
 
-  if (!dbUrl) {
-    console.warn("⚠️  SUPABASE_DB_URL no definida — saltando setup de base de datos.");
-    console.warn("   Agrega SUPABASE_DB_URL en las variables de entorno de Coolify.");
-    console.warn("   La encuentras en: Supabase Dashboard → Settings → Database → Connection string → URI\n");
-    process.exit(0); // No fallar el build
+  if (!supabaseUrl || !accessToken) {
+    if (!supabaseUrl)    console.warn("⚠️  NEXT_PUBLIC_SUPABASE_URL no definida.");
+    if (!accessToken)    console.warn("⚠️  SUPABASE_ACCESS_TOKEN no definida — saltando setup de BD.");
+    console.warn("   Agrega SUPABASE_ACCESS_TOKEN en Coolify → Environment Variables.");
+    console.warn("   Lo encuentras en: supabase.com → Account → Access Tokens\n");
+    process.exit(0);
   }
+
+  // Extraer project ref de la URL: https://XXXX.supabase.co
+  const projectRef = supabaseUrl.replace("https://", "").split(".")[0];
 
   console.log("\n🗄️  Pulso — Setup de base de datos");
-  console.log("🔌  Conectando a Supabase...\n");
+  console.log(`🔌  Conectando al proyecto: ${projectRef}\n`);
 
-  let pg;
   try {
-    const module = await import("pg");
-    pg = module.default;
-  } catch {
-    console.warn("⚠️  Paquete 'pg' no disponible — saltando setup de base de datos.\n");
+    // Verificar que la conexión funcione
+    await runQuery(projectRef, accessToken, "SELECT 1");
+    console.log("✅  Conexión exitosa.\n");
+  } catch (err) {
+    console.error(`❌  No se pudo conectar a Supabase: ${err.message}`);
+    console.error("   Verifica que SUPABASE_ACCESS_TOKEN sea válido y tenga permisos.\n");
     process.exit(0);
   }
 
-  const { Client } = pg;
-  const client = new Client({
-    connectionString: dbUrl,
-    ssl: { rejectUnauthorized: false },
-    connectionTimeoutMillis: 10000,
-  });
+  const sql = readFileSync(join(__dirname, "../supabase_schema.sql"), "utf8");
 
-  try {
-    await client.connect();
-    console.log("✅  Conexión exitosa.\n");
+  // Separar en sentencias individuales
+  const statements = sql
+    .split(";")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0 && !s.startsWith("--"));
 
-    const sql = readFileSync(join(__dirname, "../supabase_schema.sql"), "utf8");
+  let created  = 0;
+  let existing = 0;
+  let warnings = 0;
 
-    // Separar en sentencias individuales
-    const statements = sql
-      .split(";")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0 && !s.startsWith("--"));
-
-    let created = 0;
-    let existing = 0;
-    let warnings = 0;
-
-    for (const stmt of statements) {
-      try {
-        await client.query(stmt);
-        created++;
-      } catch (err) {
-        // Errores de "ya existe" — son normales después del primer deploy
-        if (
-          err.code === "42P07" || // tabla duplicada
-          err.code === "42710" || // objeto duplicado
-          err.code === "42P16" || // ya tiene RLS
-          err.message?.includes("already exists")
-        ) {
-          existing++;
-        } else {
-          console.warn(`   ⚠️  ${err.message}`);
-          warnings++;
-        }
+  for (const stmt of statements) {
+    try {
+      await runQuery(projectRef, accessToken, stmt);
+      created++;
+    } catch (err) {
+      const msg = err.message || "";
+      if (
+        msg.includes("already exists") ||
+        msg.includes("duplicate") ||
+        msg.includes("42P07") ||
+        msg.includes("42710") ||
+        msg.includes("42P16")
+      ) {
+        existing++;
+      } else {
+        console.warn(`   ⚠️  ${msg.slice(0, 120)}`);
+        warnings++;
       }
     }
-
-    console.log("📋  Resultado:");
-    console.log(`   ✅ ${created} sentencias ejecutadas`);
-    if (existing > 0) console.log(`   ℹ️  ${existing} objetos ya existían (normal en redeploys)`);
-    if (warnings > 0) console.log(`   ⚠️  ${warnings} advertencias`);
-    console.log("\n📦  Tablas disponibles:");
-    console.log("   • metricas");
-    console.log("   • habitos");
-    console.log("   • recetas_guardadas");
-    console.log("   • rutinas");
-    console.log("   • perfil_usuario");
-    console.log("\n✅  Setup de base de datos completado.\n");
-
-  } catch (err) {
-    // No fallar el build si hay un error de conexión
-    console.error(`❌  Error en setup de BD: ${err.message}`);
-    console.error("   La app desplegará igual pero revisa la conexión a Supabase.\n");
-    process.exit(0);
-  } finally {
-    await client.end().catch(() => {});
   }
+
+  console.log("📋  Resultado:");
+  console.log(`   ✅ ${created} sentencias ejecutadas`);
+  if (existing > 0) console.log(`   ℹ️  ${existing} objetos ya existían (normal en redeploys)`);
+  if (warnings > 0) console.log(`   ⚠️  ${warnings} advertencias`);
+  console.log("\n📦  Tablas disponibles:");
+  console.log("   • metricas          • habitos");
+  console.log("   • recetas_guardadas • rutinas");
+  console.log("   • perfil_usuario");
+  console.log("\n✅  Setup de base de datos completado.\n");
 }
 
-main();
+main().catch((err) => {
+  console.error("❌  Error inesperado en setup-db:", err.message);
+  process.exit(0); // No fallar el build
+});
