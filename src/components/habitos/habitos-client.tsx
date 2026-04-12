@@ -628,7 +628,7 @@ export function HabitosClient() {
             {habitosDef.length === 0 && !mostrandoForm ? (
               <div className="rounded-xl border border-dashed border-border bg-surface p-6 text-center">
                 <p className="text-sm text-muted-foreground mb-1">Sin hábitos personalizados</p>
-                <p className="text-xs text-muted-foreground">Toca "Nuevo" para agregar el primero</p>
+                <p className="text-xs text-muted-foreground">Toca &ldquo;Nuevo&rdquo; para agregar el primero</p>
               </div>
             ) : (
               <div className="space-y-2">
