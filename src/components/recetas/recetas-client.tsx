@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   ChefHat, Sparkles, BookOpen, Loader2, ImageIcon,
   Bookmark, Trash2, RefreshCw, ArrowLeft, Clock, Users,
@@ -129,6 +130,15 @@ async function leerStream(
     }
   }
   return textoCompleto;
+}
+
+// ─── portal (evita problemas de overflow en el layout) ───────────────────────
+
+function Portal({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  if (!mounted) return null;
+  return createPortal(children, document.body);
 }
 
 // ─── tipos ────────────────────────────────────────────────────────────────────
@@ -572,16 +582,18 @@ export function RecetasClient() {
       </div>
 
       {recetaDetalle && (
-        <RecetaDetalle
-          receta={recetaDetalle}
-          onCerrar={() => setRecetaDetalle(null)}
-          onEliminar={() => handleEliminar(recetaDetalle.id)}
-          onCalificar={(cal) => {
-            calificarReceta(recetaDetalle.id, cal);
-            setGuardadas((prev) => prev.map((r) => r.id === recetaDetalle.id ? { ...r, calificacion: cal } : r));
-            setRecetaDetalle((prev) => prev ? { ...prev, calificacion: cal } : prev);
-          }}
-        />
+        <Portal>
+          <RecetaDetalle
+            receta={recetaDetalle}
+            onCerrar={() => setRecetaDetalle(null)}
+            onEliminar={() => handleEliminar(recetaDetalle.id)}
+            onCalificar={(cal) => {
+              calificarReceta(recetaDetalle.id, cal);
+              setGuardadas((prev) => prev.map((r) => r.id === recetaDetalle.id ? { ...r, calificacion: cal } : r));
+              setRecetaDetalle((prev) => prev ? { ...prev, calificacion: cal } : prev);
+            }}
+          />
+        </Portal>
       )}
     </>
   );

@@ -1,6 +1,14 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
+
+function Portal({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  if (!mounted) return null;
+  return createPortal(children, document.body);
+}
 import {
   Dumbbell, Sparkles, RefreshCw, Loader2, ChevronRight,
   Bookmark, BookOpen, Trash2, ArrowLeft, Moon, Brain,
@@ -320,11 +328,13 @@ export function RutinasClient() {
   // Vista detalle / guiada
   if (rutinaDetalle) {
     return (
-      <RutinaGuiada
-        rutina={rutinaDetalle}
-        onCerrar={() => setRutinaDetalle(null)}
-        onEliminar={() => handleEliminar(rutinaDetalle.id)}
-      />
+      <Portal>
+        <RutinaGuiada
+          rutina={rutinaDetalle}
+          onCerrar={() => setRutinaDetalle(null)}
+          onEliminar={() => handleEliminar(rutinaDetalle.id)}
+        />
+      </Portal>
     );
   }
 
