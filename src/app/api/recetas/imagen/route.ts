@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     });
 
     const parts = response.candidates?.[0]?.content?.parts;
-    const imagePart = parts?.find((p: { inlineData?: { data: string; mimeType: string } }) => p.inlineData);
+    const imagePart = parts?.find((p) => p.inlineData);
 
     if (!imagePart?.inlineData?.data) {
       return Response.json({ error: "No se pudo generar la imagen" }, { status: 500 });
