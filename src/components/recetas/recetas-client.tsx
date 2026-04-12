@@ -731,6 +731,12 @@ function MercadoView({ ingredientesRecetas }: { ingredientesRecetas: string[] })
   const [vistaGuardadas, setVistaGuardadas] = useState(false);
   const [listaDetalle, setListaDetalle] = useState<ListaMercadoRow | null>(null);
 
+  // Cargar historial al montar para tener contexto
+  useEffect(() => {
+    if (!uid) return;
+    getListasMercado(uid).then(setListas);
+  }, [uid]);
+
   // typewriter
   useEffect(() => {
     if (textoMostrado.length >= listaRef.current.length) return;
@@ -754,6 +760,7 @@ function MercadoView({ ingredientesRecetas }: { ingredientesRecetas: string[] })
       body: JSON.stringify({
         periodo,
         ingredientes_recetas: ingredientesRecetas,
+        listas_anteriores: listas.slice(0, 2).map((l) => ({ nombre: l.nombre, contenido: l.contenido })),
         historial: historialApi,
         pregunta,
       }),
@@ -808,7 +815,8 @@ function MercadoView({ ingredientesRecetas }: { ingredientesRecetas: string[] })
   const cargarListas = async () => {
     if (!uid) return;
     setCargandoListas(true);
-    setListas(await getListasMercado(uid));
+    const data = await getListasMercado(uid);
+    setListas(data);
     setCargandoListas(false);
   };
 
