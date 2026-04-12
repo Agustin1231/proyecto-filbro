@@ -8,9 +8,9 @@ App PWA de salud cardiovascular potenciada por IA. Monitorea tus métricas, desc
 
 | # | Módulo | Estado | Detalles |
 |---|--------|--------|----------|
-| 1 | Dashboard de Métricas | ✅ Completo | 4 métricas, gráficas 30d, análisis IA, edición inline |
-| 2 | Asistente de Recetas | ✅ Completo | Streaming Claude, imagen Imagen 3, guardado en Storage |
-| 3 | Generador de Rutinas | 🚧 Pendiente | — |
+| 1 | Dashboard de Métricas | ✅ Completo | 4 métricas, gráficas 30d, análisis IA, edición inline, upsert diario |
+| 2 | Asistente de Recetas + Mercado | ✅ Completo | Streaming Claude, imagen Imagen 3, guardado, calificación estrellas, lista de compras con checklist |
+| 3 | Generador de Rutinas | ✅ Completo | Cuestionario conversacional, rutina semanal progresiva, guía paso a paso con timer |
 | 4 | Calendario de Hábitos | 🚧 Pendiente | — |
 | 5 | Score de Riesgo Cardiovascular | 🚧 Pendiente | — |
 | 6 | Centro de Tips Personalizados | 🚧 Pendiente | — |
@@ -37,15 +37,31 @@ Registro y seguimiento de 4 métricas cardiovasculares:
 
 ---
 
-## Módulo 2 — Asistente de Recetas
+## Módulo 2 — Asistente de Recetas + Mercado
 
+**Tab Recetas:**
 1. Usuario escribe ingredientes disponibles
 2. Claude genera receta cardioprotectora en streaming (typewriter word-by-word)
 3. Al terminar el texto, Imagen 3 genera foto fotorrealista del plato (~5s)
 4. La receta se puede guardar con imagen en Supabase Storage
-5. Vista "Guardadas" con detalle full-screen y botón regresar
+5. Vista "Guardadas" con detalle full-screen (createPortal) y botón regresar
+6. Calificación de estrellas en recetas guardadas
 
-**Markdown soportado en recetas:** `**negrita**`, `*cursiva*`, `---`, `> tips`
+**Tab Mercado:**
+- Lista de compras generada con IA extrayendo ingredientes del texto de la receta
+- Checklist interactivo para tachar ingredientes mientras se compra
+- Contexto histórico de listas anteriores para no repetir ingredientes ya comprados
+
+**Markdown soportado:** `**negrita**`, `*cursiva*`, `---`, `> tips`
+
+---
+
+## Módulo 3 — Generador de Rutinas
+
+1. Cuestionario conversacional con Claude: edad, condición física, tiempo disponible, equipamiento, lesiones, objetivos
+2. Genera rutina semanal cardiovascular progresiva (HIIT, cardio moderado, fuerza)
+3. Tiene contexto de métricas del usuario e historial de rutinas anteriores para plan progresivo
+4. Rutina guiada paso a paso con timer de descanso entre ejercicios
 
 ---
 

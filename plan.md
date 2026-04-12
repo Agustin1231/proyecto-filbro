@@ -208,14 +208,17 @@ Usuario (iOS/Android/Web)
 - [x] Input de sueño en horas + minutos (ej. 6h 55m)
 - [x] Presión arterial removida del MVP
 
-### Semana 5–6 — IA Conversacional ✅ (recetas) / 🚧 (rutinas)
+### Semana 5–6 — IA Conversacional ✅ Completo
 - [x] Chat de recetas con streaming en tiempo real
 - [x] Generación de imagen del plato al terminar (Imagen 3)
 - [x] Guardar recetas favoritas con imagen (Supabase Storage)
-- [x] Vista de receta completa full-screen con botón regresar
-- [ ] Cuestionario conversacional para rutinas
-- [ ] Generación de rutina semanal personalizada
-- [ ] Vista de rutina activa con progreso
+- [x] Vista de receta completa full-screen con botón regresar (createPortal)
+- [x] Calificación de estrellas en recetas guardadas
+- [x] Tab Mercado: lista de compras generada por IA con ingredientes de la receta
+- [x] Checklist interactivo de mercado con contexto histórico de listas anteriores
+- [x] Cuestionario conversacional para rutinas
+- [x] Generación de rutina semanal personalizada con contexto de métricas e historial
+- [x] Vista de rutina guiada paso a paso con timer de descanso
 
 ### Semana 7–8 — Hábitos + Polish + Launch
 - [ ] Calendario de hábitos (diario/semanal/mensual)
@@ -250,4 +253,4 @@ Usuario (iOS/Android/Web)
 
 ---
 
-*Última actualización: Abril 2026*
+*Última actualización: 12 de abril de 2026*
