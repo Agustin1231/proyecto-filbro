@@ -1,9 +1,10 @@
 import { GoogleGenAI, Modality } from "@google/genai";
+import { uploadRecetaImagen } from "@/lib/supabase/recetas";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-  const { titulo, descripcion } = await req.json();
+  const { titulo, descripcion, uid } = await req.json();
 
   if (!titulo) {
     return Response.json({ error: "Título requerido" }, { status: 400 });
@@ -15,33 +16,52 @@ export async function POST(req: Request) {
   }
 
   try {
+    console.log("[imagen] Iniciando generación para:", titulo);
     const ai = new GoogleGenAI({ apiKey });
 
-    const prompt = `Professional food photography of "${titulo}". ${descripcion ?? "Healthy cardiovascular dish, Mediterranean style"}. Shot from above, natural lighting, on a rustic wooden table, vibrant colors, appetizing presentation, high resolution.`;
+    const prompt = `Professional food photography of "${titulo}". ${
+      descripcion ?? "Healthy cardiovascular dish, Mediterranean style"
+    }. Shot from above, natural lighting, rustic wooden table, vibrant colors, appetizing, high resolution.`;
 
+    console.log("[imagen] Llamando al modelo de imagen...");
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-preview-image-generation",
+      model: "gemini-3.1-flash-image-preview",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
-      config: {
-        responseModalities: [Modality.IMAGE],
-      },
+      config: { responseModalities: [Modality.IMAGE, Modality.TEXT] },
     });
+    console.log("[imagen] Respuesta recibida");
 
-    const parts = response.candidates?.[0]?.content?.parts;
-    const imagePart = parts?.find((p: { inlineData?: { data: string; mimeType: string } }) => p.inlineData);
+    // Buscar la parte de imagen en la respuesta
+    const parts = response.candidates?.[0]?.content?.parts ?? [];
+    const imagePart = parts.find((p) => p.inlineData?.data);
 
     if (!imagePart?.inlineData?.data) {
-      return Response.json({ error: "No se pudo generar la imagen" }, { status: 500 });
+      console.error("[imagen] No se encontró imagen en la respuesta:", JSON.stringify(response));
+      return Response.json({ error: "No se pudo generar la imagen", detalle: "Sin datos de imagen en respuesta" }, { status: 500 });
     }
 
-    const mimeType = imagePart.inlineData.mimeType ?? "image/png";
-    const imageBase64 = imagePart.inlineData.data;
+    const { data: imageBytes, mimeType = "image/png" } = imagePart.inlineData;
+    console.log("[imagen] Imagen OK, mimeType:", mimeType, "tamaño:", imageBytes.length);
 
-    return Response.json({
-      imagen: `data:${mimeType};base64,${imageBase64}`,
-    });
+    const base64DataUrl = `data:${mimeType};base64,${imageBytes}`;
+
+    // Subir a Supabase Storage si hay uid
+    if (uid) {
+      console.log("[imagen] Subiendo a Supabase Storage, uid:", uid);
+      const publicUrl = await uploadRecetaImagen(uid, base64DataUrl);
+      console.log("[imagen] URL pública:", publicUrl);
+      if (publicUrl) {
+        return Response.json({ imagen: publicUrl });
+      }
+      console.warn("[imagen] Upload a Supabase falló, usando fallback base64");
+    }
+
+    // Fallback: devolver base64 si no hay uid o falló el upload
+    return Response.json({ imagen: base64DataUrl });
   } catch (err) {
-    console.error("Error generando imagen:", err);
-    return Response.json({ error: "Error al generar imagen" }, { status: 500 });
+    const mensaje = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? err.stack : undefined;
+    console.error("[imagen] Error:", err);
+    return Response.json({ error: "Error al generar imagen", detalle: mensaje, stack }, { status: 500 });
   }
 }

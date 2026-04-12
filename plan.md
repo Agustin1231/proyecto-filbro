@@ -79,15 +79,15 @@ Las enfermedades cardiovasculares son la principal causa de muerte en el mundo. 
 ## Los 6 Módulos
 
 ### 1. Dashboard de Métricas Cardiovasculares ✅
-Registro de presión arterial (sistólica/diastólica), frecuencia cardíaca, peso, horas de sueño y nivel de estrés. Tarjetas de resumen con estado Normal/Atención/Riesgo. Gráficas de tendencias 30 días. El agente Claude analiza la evolución y genera recomendaciones personalizadas.
+Registro de 4 métricas clave, tarjetas con estado Normal/Atención/Riesgo, edición inline, gráficas de tendencia 30 días y análisis personalizado con Claude en streaming.
 
-**Métricas:**
-- Presión sistólica (mmHg) — normal: 90–120
-- Presión diastólica (mmHg) — normal: 60–80
+**Métricas activas (MVP):**
 - Frecuencia cardíaca (bpm) — normal: 60–100
 - Peso (kg)
-- Horas de sueño (h) — normal: 7–9
+- Horas de sueño — input en horas + minutos, normal: 7–9 h
 - Nivel de estrés (1–10) — normal: 1–3
+
+> Presión arterial (sistólica/diastólica) removida del MVP — demasiado técnica para el usuario general sin contexto médico. Se retomará en v2 con contexto educativo mejorado.
 
 ### 2. Asistente de Recetas — Streaming + Imagen IA
 Chat donde el usuario escribe sus ingredientes. La respuesta llega en tiempo real via streaming (Vercel AI SDK + Claude). Al terminar, se genera automáticamente una imagen fotorrealista del plato con Gemini API. El agente tiene contexto del perfil cardiovascular del usuario.
@@ -118,9 +118,9 @@ Tips y micro-artículos generados con IA según el perfil del usuario. Contextua
 |---|---|---|
 | Frontend | Next.js 15 (App Router) | SSR + PWA + API routes |
 | UI | Tailwind CSS 4 + shadcn/ui | Dark mode nativo |
-| IA Texto | Claude API (claude-sonnet-4-5) | Via Vercel AI SDK |
-| IA Streaming | Vercel AI SDK | `useChat` + streaming |
-| IA Imágenes | Gemini API (Google) | Imágenes de recetas |
+| IA Texto | Claude API (`claude-sonnet-4-6`) | Via Vercel AI SDK |
+| IA Streaming | Vercel AI SDK | streaming + typewriter word-by-word |
+| IA Imágenes | Imagen 3 (`imagen-3.0-generate-002`) | Google AI SDK — imágenes de recetas |
 | Base de datos | Supabase (PostgreSQL) | UUID anónimo como PK |
 | Gráficas | Recharts | Tendencias de métricas |
 | Deploy | Coolify (self-hosted) | Hetzner VPS |
@@ -150,11 +150,17 @@ GEMINI_API_KEY=
 6. Futuro: opción de "guardar progreso" vinculando un email al UUID
 
 ### Tablas en Supabase
-- `metricas` — registros de métricas cardiovasculares
-- `habitos` — seguimiento diario de hábitos
-- `recetas_guardadas` — recetas con imagen guardadas por el usuario
-- `rutinas` — planes de ejercicio generados
-- `perfil_usuario` — perfil anónimo del usuario (edad, objetivos, disclaimer aceptado)
+
+| Tabla | Descripción |
+|---|---|
+| `metricas` | Registros diarios de métricas cardiovasculares (upsert por día) |
+| `habitos` | Hábitos fijos por día: ejercicio, alimentacion, sueno, medicamento, hidratacion |
+| `habitos_definicion` | Hábitos personalizados del usuario (nombre + emoji) |
+| `habitos_registro` | Completados diarios de hábitos custom + ejercicios de rutina |
+| `recetas_guardadas` | Recetas guardadas con imagen, calificación de estrellas |
+| `listas_mercado` | Listas de compras generadas por IA (checklist persistido en localStorage) |
+| `rutinas` | Planes de ejercicio semanales generados por IA (JSON con ejercicios por bloque) |
+| `perfil_usuario` | Perfil anónimo del usuario (edad, objetivos, disclaimer aceptado) |
 
 ---
 
@@ -204,14 +210,21 @@ Usuario (iOS/Android/Web)
 - [x] Gráficas de tendencias 30 días (Recharts)
 - [x] Análisis IA con Claude streaming
 - [x] API route `/api/analisis-metricas`
+- [x] Edición inline de métricas directamente en las tarjetas
+- [x] Input de sueño en horas + minutos (ej. 6h 55m)
+- [x] Presión arterial removida del MVP
 
-### Semana 5–6 — IA Conversacional
-- [ ] Chat de recetas con streaming en tiempo real
-- [ ] Generación de imagen del plato al terminar (Gemini)
-- [ ] Guardar recetas favoritas con imagen
-- [ ] Cuestionario conversacional para rutinas
-- [ ] Generación de rutina semanal personalizada
-- [ ] Vista de rutina activa con progreso
+### Semana 5–6 — IA Conversacional ✅ Completo
+- [x] Chat de recetas con streaming en tiempo real
+- [x] Generación de imagen del plato al terminar (Imagen 3)
+- [x] Guardar recetas favoritas con imagen (Supabase Storage)
+- [x] Vista de receta completa full-screen con botón regresar (createPortal)
+- [x] Calificación de estrellas en recetas guardadas
+- [x] Tab Mercado: lista de compras generada por IA con ingredientes de la receta
+- [x] Checklist interactivo de mercado con contexto histórico de listas anteriores
+- [x] Cuestionario conversacional para rutinas
+- [x] Generación de rutina semanal personalizada con contexto de métricas e historial
+- [x] Vista de rutina guiada paso a paso con timer de descanso
 
 ### Semana 7–8 — Hábitos + Polish + Launch
 - [ ] Calendario de hábitos (diario/semanal/mensual)
@@ -246,4 +259,4 @@ Usuario (iOS/Android/Web)
 
 ---
 
-*Última actualización: Abril 2026*
+*Última actualización: 12 de abril de 2026*
