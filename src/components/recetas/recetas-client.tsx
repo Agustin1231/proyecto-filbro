@@ -400,7 +400,7 @@ export function RecetasClient() {
                 </div>
                 <p className="text-sm font-medium text-foreground/70">Escribe tus ingredientes</p>
                 <p className="text-xs text-muted-foreground">
-                  Claude creará una receta cardioprotectora y Gemini generará la foto del plato.
+                  La IA creará una receta cardioprotectora y generará la foto del plato.
                 </p>
               </div>
             )}

@@ -192,7 +192,7 @@ export function AnalisisIA({ metricas }: Props) {
         {!hayContenido && !loading && (
           <div className="text-center space-y-3">
             <p className="text-xs text-muted-foreground">
-              Claude analiza tus métricas y te da recomendaciones personalizadas.
+              La IA analiza tus métricas y te da recomendaciones personalizadas.
             </p>
             <Button variant="ghost" className="gap-2 text-purple border border-purple/30" onClick={analizar}>
               <Sparkles className="h-4 w-4" />
