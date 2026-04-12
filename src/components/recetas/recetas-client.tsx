@@ -971,7 +971,17 @@ function MercadoView({ ingredientesRecetas }: { ingredientesRecetas: string[] })
 // ─── checklist de lista de mercado ────────────────────────────────────────────
 
 function ListaMercadoChecklist({ lista, onVolver }: { lista: ListaMercadoRow; onVolver: () => void }) {
-  const [completados, setCompletados] = useState<Set<string>>(new Set());
+  const storageKey = `mercado-checklist-${lista.id}`;
+
+  const [completados, setCompletados] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      return saved ? new Set<string>(JSON.parse(saved)) : new Set<string>();
+    } catch {
+      return new Set<string>();
+    }
+  });
+
   const secciones = parsearItemsMercado(lista.contenido);
   const totalItems = secciones.reduce((acc, s) => acc + s.items.length, 0);
   const totalCompletados = completados.size;
@@ -981,6 +991,7 @@ function ListaMercadoChecklist({ lista, onVolver }: { lista: ListaMercadoRow; on
       const next = new Set(prev);
       if (next.has(item)) next.delete(item);
       else next.add(item);
+      localStorage.setItem(storageKey, JSON.stringify([...next]));
       return next;
     });
   };
@@ -994,7 +1005,7 @@ function ListaMercadoChecklist({ lista, onVolver }: { lista: ListaMercadoRow; on
         <div className="ml-auto flex items-center gap-2">
           <span className="text-xs text-muted-foreground">{totalCompletados}/{totalItems} comprados</span>
           {totalCompletados > 0 && (
-            <button onClick={() => setCompletados(new Set())} className="text-xs text-muted-foreground hover:text-foreground transition-colors">Reiniciar</button>
+            <button onClick={() => { setCompletados(new Set()); localStorage.removeItem(storageKey); }} className="text-xs text-muted-foreground hover:text-foreground transition-colors">Reiniciar</button>
           )}
         </div>
       </div>
