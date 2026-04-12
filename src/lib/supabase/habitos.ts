@@ -1,12 +1,29 @@
 import { supabase } from "./client";
 
+export type Frecuencia = "diario" | "semanal" | "mensual";
+
 export interface HabitoDefinicionRow {
   id: string;
   uid: string;
   nombre: string;
   emoji: string;
+  frecuencia: Frecuencia;
+  hora: string | null;
+  lugar: string | null;
+  dias_semana: string[];
+  dia_mes: number | null;
   activo: boolean;
   created_at: string;
+}
+
+export interface HabitoFormData {
+  nombre: string;
+  emoji: string;
+  frecuencia: Frecuencia;
+  hora: string | null;
+  lugar: string | null;
+  dias_semana: string[];
+  dia_mes: number | null;
 }
 
 export interface HabitoFijoRow {
@@ -25,7 +42,7 @@ export interface HabitoRegistroRow {
   ref_id: string;
 }
 
-// ─── Definiciones (hábitos custom del usuario) ────────────────────────────────
+// ─── Definiciones ─────────────────────────────────────────────────────────────
 
 export async function getHabitosDefinicion(uid: string): Promise<HabitoDefinicionRow[]> {
   const { data } = await supabase
@@ -39,12 +56,37 @@ export async function getHabitosDefinicion(uid: string): Promise<HabitoDefinicio
 
 export async function crearHabitoDefinicion(
   uid: string,
-  nombre: string,
-  emoji: string
+  data: HabitoFormData
+): Promise<{ error: string | null }> {
+  const { error } = await supabase.from("habitos_definicion").insert({
+    uid,
+    nombre: data.nombre,
+    emoji: data.emoji,
+    frecuencia: data.frecuencia,
+    hora: data.hora || null,
+    lugar: data.lugar || null,
+    dias_semana: data.dias_semana,
+    dia_mes: data.dia_mes,
+  });
+  return { error: error?.message ?? null };
+}
+
+export async function editarHabitoDefinicion(
+  id: string,
+  data: HabitoFormData
 ): Promise<{ error: string | null }> {
   const { error } = await supabase
     .from("habitos_definicion")
-    .insert({ uid, nombre, emoji });
+    .update({
+      nombre: data.nombre,
+      emoji: data.emoji,
+      frecuencia: data.frecuencia,
+      hora: data.hora || null,
+      lugar: data.lugar || null,
+      dias_semana: data.dias_semana,
+      dia_mes: data.dia_mes,
+    })
+    .eq("id", id);
   return { error: error?.message ?? null };
 }
 
@@ -56,7 +98,7 @@ export async function eliminarHabitoDefinicion(id: string): Promise<{ error: str
   return { error: error?.message ?? null };
 }
 
-// ─── Hábitos fijos por día (hidratacion, alimentacion, sueno, medicamento) ────
+// ─── Hábitos fijos (predefinidos) ────────────────────────────────────────────
 
 export async function toggleHabitoFijo(
   uid: string,
@@ -88,15 +130,12 @@ export async function toggleHabitoRegistro(
     const { error } = await supabase
       .from("habitos_registro")
       .delete()
-      .eq("uid", uid)
-      .eq("fecha", fecha)
-      .eq("tipo", tipo)
-      .eq("ref_id", refId);
+      .eq("uid", uid).eq("fecha", fecha).eq("tipo", tipo).eq("ref_id", refId);
     return { error: error?.message ?? null };
   }
 }
 
-// ─── Lectura por fecha ────────────────────────────────────────────────────────
+// ─── Lectura por fecha / semana ───────────────────────────────────────────────
 
 export async function getHabitosFecha(
   uid: string,
