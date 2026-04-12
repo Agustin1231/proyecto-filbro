@@ -1,5 +1,13 @@
 import { supabase } from "./client";
 
+export interface Ejercicio {
+  bloque: string;
+  nombre: string;
+  detalle: string;   // ej: "3 series × 12 repeticiones"
+  descanso: number;  // segundos
+  descripcion?: string;
+}
+
 export interface RutinaContenido {
   texto: string;
   nivel: string;
@@ -7,6 +15,7 @@ export interface RutinaContenido {
   lugar: string;
   limitacion: string;
   metricas?: { sueno?: number; estres?: number };
+  ejercicios?: Ejercicio[];
 }
 
 export interface RutinaRow {
