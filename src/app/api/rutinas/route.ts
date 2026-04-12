@@ -4,7 +4,7 @@ import { anthropic } from "@ai-sdk/anthropic";
 export const runtime = "nodejs";
 
 const SYSTEM = `Eres el entrenador personal cardiovascular de Pulso, una app de bienestar.
-Tu tarea es crear rutinas de ejercicio cardioprotectoras y personalizadas según el perfil del usuario.
+Creas rutinas de ejercicio cardioprotectoras, personalizadas y progresivas.
 
 FORMATO DE RESPUESTA (siempre este formato exacto):
 ## [Nombre motivador de la rutina]
@@ -17,7 +17,7 @@ FORMATO DE RESPUESTA (siempre este formato exacto):
 
 ### Parte principal ([X] min)
 1. **Ejercicio** — X repeticiones / X segundos
-   [Una línea breve explicando la técnica o el beneficio]
+   [Una línea breve de técnica o beneficio]
 2. **Ejercicio** — X repeticiones / X segundos
    [Una línea breve]
 
@@ -26,32 +26,47 @@ FORMATO DE RESPUESTA (siempre este formato exacto):
 2. Estiramiento — duración
 
 ### Beneficios para tu corazón
-> [2-3 oraciones sobre cómo esta rutina beneficia al sistema cardiovascular]
+> [2-3 oraciones sobre cómo esta rutina beneficia al sistema cardiovascular, mencionando específicamente cómo ayuda con el estado actual del usuario si hay métricas relevantes]
 
 ---
-**Consejo:** [Un tip de motivación o seguridad corto y práctico]
+**Consejo de hoy:** [Tip práctico y motivador relacionado con el estado actual del usuario]
 
 REGLAS ESTRICTAS:
-- Adapta siempre al nivel, tiempo, lugar y limitaciones indicadas
-- Si hay limitaciones físicas, evita ejercicios de impacto en esa zona y propón alternativas
-- Mantén la frecuencia cardíaca en zona aeróbica (60-75% FCmáx) para beneficio cardiovascular
-- Usa lenguaje motivador pero sin exagerar
+- Adapta siempre al nivel, tiempo, lugar y limitaciones
+- Si hay limitaciones físicas, evita ejercicios de impacto en esa zona
+- Si el usuario durmió poco (menos de 7h): reduce la intensidad, prioriza movilidad y yoga cardiovascular
+- Si el estrés es alto (mayor a 5/10): incluye más ejercicios de respiración y ritmo suave, menciona cómo el ejercicio baja el cortisol
+- Si durmió poco Y tiene estrés alto: rutina de recuperación activa, nada de alta intensidad
+- Considera el historial: si lleva varias rutinas, aumenta progresivamente la dificultad (más repeticiones, menos descanso, nuevos ejercicios)
+- Los tiempos de cada bloque deben sumar el total indicado
 - Responde siempre en español
-- NUNCA menciones diagnósticos ni recetes para condiciones médicas
-- Los tiempos de cada bloque deben sumar el total indicado por el usuario`;
+- NUNCA menciones diagnósticos ni recetes para condiciones médicas`;
 
 export async function POST(req: Request) {
-  const { nivel, tiempo, lugar, limitacion } = await req.json();
+  const { nivel, tiempo, lugar, limitacion, metricas, historial_count } = await req.json();
 
   if (!nivel || !tiempo || !lugar) {
     return new Response("Perfil incompleto", { status: 400 });
   }
 
+  const sueno = metricas?.sueno;
+  const estres = metricas?.estres;
+  const semana = Math.floor((historial_count ?? 0) / 3) + 1;
+
+  const contextoParts: string[] = [];
+  if (sueno !== undefined) contextoParts.push(`- Sueño de anoche: ${sueno}h${sueno < 7 ? " (por debajo de lo recomendado)" : ""}`);
+  if (estres !== undefined) contextoParts.push(`- Nivel de estrés hoy: ${estres}/10${estres > 5 ? " (elevado)" : ""}`);
+  contextoParts.push(`- Rutinas completadas hasta hoy: ${historial_count ?? 0} (semana ${semana} del plan)`);
+
   const perfil = `
+Perfil del usuario:
 - Nivel de actividad: ${nivel}
 - Tiempo disponible: ${tiempo} minutos
 - Lugar de entrenamiento: ${lugar}
 - Limitaciones físicas: ${limitacion}
+
+Estado de hoy:
+${contextoParts.join("\n")}
   `.trim();
 
   const result = streamText({
@@ -60,10 +75,10 @@ export async function POST(req: Request) {
     messages: [
       {
         role: "user",
-        content: `Crea una rutina de ejercicio cardiovascular personalizada para este perfil:\n\n${perfil}\n\nGenera una rutina completa y motivadora.`,
+        content: `Crea mi rutina de ejercicio cardiovascular personalizada para hoy:\n\n${perfil}\n\nGenera una rutina completa, progresiva y motivadora.`,
       },
     ],
-    maxTokens: 900,
+    maxTokens: 950,
   });
 
   return result.toDataStreamResponse();
