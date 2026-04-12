@@ -20,26 +20,6 @@ export interface MetricaConfig {
 
 export const METRICAS: MetricaConfig[] = [
   {
-    tipo:    "presion_sistolica",
-    label:   "Presión Sistólica",
-    unidad:  "mmHg",
-    emoji:   "🩸",
-    color:   "coral",
-    min: 60, max: 220, paso: 1,
-    rango: { normal: [90, 120], atencion: [120, 140] },
-    descripcion: "Valor superior de la presión arterial",
-  },
-  {
-    tipo:    "presion_diastolica",
-    label:   "Presión Diastólica",
-    unidad:  "mmHg",
-    emoji:   "💧",
-    color:   "blue",
-    min: 40, max: 140, paso: 1,
-    rango: { normal: [60, 80], atencion: [80, 90] },
-    descripcion: "Valor inferior de la presión arterial",
-  },
-  {
     tipo:    "frecuencia_cardiaca",
     label:   "Frecuencia Cardíaca",
     unidad:  "bpm",

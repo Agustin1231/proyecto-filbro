@@ -54,8 +54,19 @@ export function TarjetasResumen({ metricas, onSelect, seleccion }: Props) {
             <p className="text-xs text-muted-foreground mb-0.5 truncate">{cfg.label}</p>
             {tieneData ? (
               <p className={cn("text-lg font-bold leading-none", ESTADO_COLORS[estado])}>
-                {cfg.paso < 1 ? valor.toFixed(1) : Math.round(valor)}
-                <span className="text-xs font-normal text-muted-foreground ml-1">{cfg.unidad}</span>
+                {cfg.tipo === "horas_sueno" ? (
+                  <>
+                    {Math.floor(valor)}
+                    <span className="text-xs font-normal text-muted-foreground">h </span>
+                    {Math.round((valor - Math.floor(valor)) * 60)}
+                    <span className="text-xs font-normal text-muted-foreground">m</span>
+                  </>
+                ) : (
+                  <>
+                    {cfg.paso < 1 ? valor.toFixed(1) : Math.round(valor)}
+                    <span className="text-xs font-normal text-muted-foreground ml-1">{cfg.unidad}</span>
+                  </>
+                )}
               </p>
             ) : (
               <p className="text-sm font-medium text-muted-foreground">Sin datos</p>

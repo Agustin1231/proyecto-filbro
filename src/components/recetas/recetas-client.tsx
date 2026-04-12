@@ -19,16 +19,19 @@ function extraerTitulo(texto: string): string {
   return match?.[1]?.trim() ?? "Receta cardioprotectora";
 }
 
-function renderBold(text: string): React.ReactNode {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+/** Renderiza **bold** e *italic* inline */
+function renderInline(text: string): React.ReactNode {
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*\n]+\*)/g);
   if (parts.length === 1) return text;
   return (
     <>
-      {parts.map((p, i) =>
-        p.startsWith("**") && p.endsWith("**")
-          ? <strong key={i} className="font-semibold text-foreground">{p.slice(2, -2)}</strong>
-          : p
-      )}
+      {parts.map((p, i) => {
+        if (p.startsWith("**") && p.endsWith("**"))
+          return <strong key={i} className="font-semibold text-foreground">{p.slice(2, -2)}</strong>;
+        if (p.startsWith("*") && p.endsWith("*"))
+          return <em key={i} className="not-italic text-foreground/70">{p.slice(1, -1)}</em>;
+        return p;
+      })}
     </>
   );
 }
@@ -37,8 +40,20 @@ function formatearContenido(texto: string, compact = false): React.ReactNode {
   const lineas = texto.split("\n");
   const base = compact ? "text-xs" : "text-sm";
   return lineas.map((linea, i) => {
+    // Separador ---
+    if (linea.trim() === "---")
+      return <hr key={i} className="border-border/40 my-3" />;
+    // Blockquote / tip  > texto
+    if (linea.startsWith("> "))
+      return (
+        <div key={i} className="border-l-2 border-teal/50 bg-teal/5 pl-3 py-1.5 my-2 rounded-r">
+          <p className={`${base} text-foreground/75`}>{renderInline(linea.slice(2))}</p>
+        </div>
+      );
+    // Título ##
     if (linea.startsWith("## "))
       return <h2 key={i} className={`${compact ? "text-base" : "text-lg"} font-bold text-foreground mt-4 mb-2 first:mt-0`}>{linea.slice(3)}</h2>;
+    // Sección ###
     if (linea.startsWith("### "))
       return <h3 key={i} className={`${base} font-semibold text-teal uppercase tracking-widest mt-4 mb-2`}>{linea.slice(4)}</h3>;
     if (linea.match(/^\*\*.+\*\*$/) && !linea.slice(2, -2).includes("**")) {
@@ -46,7 +61,7 @@ function formatearContenido(texto: string, compact = false): React.ReactNode {
       if (inner.includes("|")) {
         return (
           <p key={i} className={`${base} text-muted-foreground mb-2 flex gap-3 flex-wrap`}>
-            {inner.split("|").map((c, j) => <span key={j}>{renderBold(c.trim())}</span>)}
+            {inner.split("|").map((c, j) => <span key={j}>{renderInline(c.trim())}</span>)}
           </p>
         );
       }
@@ -56,7 +71,7 @@ function formatearContenido(texto: string, compact = false): React.ReactNode {
       return (
         <div key={i} className={`flex gap-2 ${base} text-foreground/90 mb-1`}>
           <span className="text-muted-foreground shrink-0 mt-0.5">•</span>
-          <span>{renderBold(linea.slice(2))}</span>
+          <span>{renderInline(linea.slice(2))}</span>
         </div>
       );
     if (linea.match(/^\d+\.\s/)) {
@@ -65,12 +80,12 @@ function formatearContenido(texto: string, compact = false): React.ReactNode {
       return (
         <div key={i} className={`flex gap-2 ${base} text-foreground/90 mb-1.5`}>
           <span className="text-teal font-bold shrink-0 min-w-[1.25rem] text-right">{num}.</span>
-          <span>{renderBold(content)}</span>
+          <span>{renderInline(content)}</span>
         </div>
       );
     }
     if (linea.trim() === "") return <div key={i} className="h-1" />;
-    return <p key={i} className={`${base} text-foreground/90 mb-1 leading-relaxed`}>{renderBold(linea)}</p>;
+    return <p key={i} className={`${base} text-foreground/90 mb-1 leading-relaxed`}>{renderInline(linea)}</p>;
   });
 }
 
