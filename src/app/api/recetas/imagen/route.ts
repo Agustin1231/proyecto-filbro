@@ -1,9 +1,10 @@
 import { GoogleGenAI } from "@google/genai";
+import { uploadRecetaImagen } from "@/lib/supabase/recetas";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-  const { titulo, descripcion } = await req.json();
+  const { titulo, descripcion, uid } = await req.json();
 
   if (!titulo) {
     return Response.json({ error: "Título requerido" }, { status: 400 });
@@ -33,9 +34,18 @@ export async function POST(req: Request) {
       return Response.json({ error: "No se pudo generar la imagen" }, { status: 500 });
     }
 
-    return Response.json({
-      imagen: `data:image/png;base64,${imageBytes}`,
-    });
+    const base64DataUrl = `data:image/png;base64,${imageBytes}`;
+
+    // Subir a Supabase Storage si hay uid
+    if (uid) {
+      const publicUrl = await uploadRecetaImagen(uid, base64DataUrl);
+      if (publicUrl) {
+        return Response.json({ imagen: publicUrl });
+      }
+    }
+
+    // Fallback: devolver base64 si no hay uid o falló el upload
+    return Response.json({ imagen: base64DataUrl });
   } catch (err) {
     console.error("Error generando imagen:", err);
     return Response.json({ error: "Error al generar imagen" }, { status: 500 });

@@ -25,12 +25,12 @@ export async function uploadRecetaImagen(
 
     const path = `${uid}/${Date.now()}.${ext}`;
     const { error } = await supabase.storage
-      .from("recetas")
+      .from("recetas-imagenes")
       .upload(path, bytes, { contentType: mimeType, cacheControl: "31536000" });
 
     if (error) return null;
 
-    const { data: urlData } = supabase.storage.from("recetas").getPublicUrl(path);
+    const { data: urlData } = supabase.storage.from("recetas-imagenes").getPublicUrl(path);
     return urlData.publicUrl ?? null;
   } catch {
     return null;
