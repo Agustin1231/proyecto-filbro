@@ -1,5 +1,42 @@
 import { supabase } from "./client";
 
+/**
+ * Sube una imagen (data URL base64) al bucket "recetas" de Supabase Storage.
+ * Devuelve la URL pública o null si falla.
+ * Requiere bucket "recetas" creado con acceso público en Supabase.
+ */
+export async function uploadRecetaImagen(
+  uid: string,
+  base64DataUrl: string
+): Promise<string | null> {
+  try {
+    const [prefix, data] = base64DataUrl.split(",");
+    if (!prefix || !data) return null;
+
+    const mimeType = prefix.split(":")[1]?.split(";")[0] ?? "image/png";
+    const ext = mimeType === "image/jpeg" ? "jpg" : "png";
+
+    // Base64 → Uint8Array
+    const binary = atob(data);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+
+    const path = `${uid}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage
+      .from("recetas")
+      .upload(path, bytes, { contentType: mimeType, cacheControl: "31536000" });
+
+    if (error) return null;
+
+    const { data: urlData } = supabase.storage.from("recetas").getPublicUrl(path);
+    return urlData.publicUrl ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export interface RecetaRow {
   id: string;
   uid: string;
