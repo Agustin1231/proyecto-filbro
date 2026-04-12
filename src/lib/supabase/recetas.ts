@@ -44,6 +44,7 @@ export interface RecetaRow {
   contenido: string;
   imagen_url: string | null;
   ingredientes: string[];
+  calificacion: number | null;
   created_at: string;
 }
 
@@ -78,6 +79,14 @@ export async function eliminarReceta(id: string): Promise<{ error: string | null
   const { error } = await supabase
     .from("recetas_guardadas")
     .delete()
+    .eq("id", id);
+  return { error: error?.message ?? null };
+}
+
+export async function calificarReceta(id: string, calificacion: number): Promise<{ error: string | null }> {
+  const { error } = await supabase
+    .from("recetas_guardadas")
+    .update({ calificacion })
     .eq("id", id);
   return { error: error?.message ?? null };
 }

@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAnonymousId } from "@/hooks/use-anonymous-id";
 import {
-  guardarReceta, getRecetasGuardadas, eliminarReceta,
+  guardarReceta, getRecetasGuardadas, eliminarReceta, calificarReceta,
   uploadRecetaImagen, type RecetaRow,
 } from "@/lib/supabase/recetas";
 
@@ -240,6 +240,16 @@ export function RecetasClient() {
     if (recetaDetalle?.id === id) setRecetaDetalle(null);
   };
 
+  const handleCalificar = async (id: string, calificacion: number) => {
+    await calificarReceta(id, calificacion);
+    setGuardadas((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, calificacion } : r))
+    );
+    if (recetaDetalle?.id === id) {
+      setRecetaDetalle((prev) => prev ? { ...prev, calificacion } : prev);
+    }
+  };
+
   const resetear = () => {
     setEstado("idle");
     setRecetaTexto("");
@@ -442,6 +452,7 @@ export function RecetasClient() {
           receta={recetaDetalle}
           onCerrar={() => setRecetaDetalle(null)}
           onEliminar={() => handleEliminar(recetaDetalle.id)}
+          onCalificar={(cal) => handleCalificar(recetaDetalle.id, cal)}
         />
       )}
     </>
@@ -504,7 +515,16 @@ function RecetaCard({
               )}
             </div>
           )}
-          <span className="text-[10px] text-muted-foreground ml-auto">{fecha}</span>
+          <div className="flex items-center gap-1.5 ml-auto">
+            {receta.calificacion && (
+              <div className="flex gap-0.5">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <span key={s} className={`text-[10px] ${s <= receta.calificacion! ? "text-amber" : "text-border"}`}>★</span>
+                ))}
+              </div>
+            )}
+            <span className="text-[10px] text-muted-foreground">{fecha}</span>
+          </div>
         </div>
       </div>
     </button>
@@ -517,12 +537,15 @@ function RecetaDetalle({
   receta,
   onCerrar,
   onEliminar,
+  onCalificar,
 }: {
   receta: RecetaRow;
   onCerrar: () => void;
   onEliminar: () => void;
+  onCalificar: (cal: number) => void;
 }) {
   const [confirmarEliminar, setConfirmarEliminar] = useState(false);
+  const [hover, setHover] = useState<number | null>(null);
 
   const handleEliminar = () => {
     if (!confirmarEliminar) { setConfirmarEliminar(true); return; }
@@ -582,6 +605,30 @@ function RecetaDetalle({
           )}
         </div>
       )}
+
+      {/* Calificación */}
+      <div className="flex items-center gap-3 px-4 pt-4">
+        <span className="text-xs text-muted-foreground">Tu valoración:</span>
+        <div className="flex gap-1">
+          {[1, 2, 3, 4, 5].map((s) => {
+            const activa = s <= (hover ?? receta.calificacion ?? 0);
+            return (
+              <button
+                key={s}
+                onClick={() => onCalificar(s)}
+                onMouseEnter={() => setHover(s)}
+                onMouseLeave={() => setHover(null)}
+                className={`text-2xl transition-all ${activa ? "text-amber scale-110" : "text-border hover:text-amber/50"}`}
+              >
+                ★
+              </button>
+            );
+          })}
+        </div>
+        {receta.calificacion && (
+          <span className="text-xs text-muted-foreground">{receta.calificacion}/5</span>
+        )}
+      </div>
 
       {/* Contenido completo */}
       <div className="px-4 py-4 pb-16">
