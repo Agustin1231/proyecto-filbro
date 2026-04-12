@@ -66,10 +66,10 @@ Las enfermedades cardiovasculares son la principal causa de muerte en el mundo. 
 | Nombre | Hex | Uso |
 |---|---|---|
 | Obsidian | `#0D1117` | Fondo principal |
-| Coral Pulse | `#FF6B6B` | Color primario / CTA |
-| Vital Teal | `#00D4AA` | Métricas positivas |
-| Alert Amber | `#F0A500` | Alertas / advertencias |
-| Deep Purple | `#A371F7` | IA / funciones premium |
+| Coral Pulse | `#FF6B6B` | Color primario / CTA / Riesgo |
+| Vital Teal | `#00D4AA` | Métricas positivas / Normal |
+| Alert Amber | `#F0A500` | Alertas / Atención |
+| Deep Purple | `#A371F7` | IA / análisis / tips |
 | Vital Blue | `#58A6FF` | Secundario |
 | Vital Green | `#3FB950` | Estado normal |
 | Snow Text | `#E6EDF3` | Texto principal |
@@ -87,9 +87,9 @@ Registro de 4 métricas clave, tarjetas con estado Normal/Atención/Riesgo, edic
 - Horas de sueño — input en horas + minutos, normal: 7–9 h
 - Nivel de estrés (1–10) — normal: 1–3
 
-> Presión arterial (sistólica/diastólica) removida del MVP — demasiado técnica para el usuario general sin contexto médico. Se retomará en v2 con contexto educativo mejorado.
+> Presión arterial removida del MVP — demasiado técnica para el usuario general sin contexto médico. Se retomará en v2 con contexto educativo mejorado.
 
-### 2. Asistente de Recetas — Streaming + Imagen IA
+### 2. Asistente de Recetas — Streaming + Imagen IA ✅
 Chat donde el usuario escribe sus ingredientes. La respuesta llega en tiempo real via streaming (Vercel AI SDK + Claude). Al terminar, se genera automáticamente una imagen fotorrealista del plato con Gemini API. El agente tiene contexto del perfil cardiovascular del usuario.
 
 **Flujo:**
@@ -98,17 +98,58 @@ Chat donde el usuario escribe sus ingredientes. La respuesta llega en tiempo rea
 3. Al finalizar el texto, Gemini genera la imagen del plato (~3s)
 4. La receta se puede guardar con su imagen en Supabase
 
-### 3. Generador de Rutinas de Ejercicio
-Cuestionario conversacional con Claude: edad, condición física, tiempo disponible, equipamiento, lesiones, objetivos. Genera una rutina semanal cardiovascular progresiva (HIIT, cardio moderado, fuerza) adaptada al perfil de riesgo. El plan se actualiza según progreso de métricas.
+**Tab Mercado:**
+- Lista de compras generada por IA con ingredientes de la receta
+- Checklist interactivo con estado persistido en localStorage (sobrevive cierre de app)
+- Contexto histórico de listas anteriores para no repetir compras
 
-### 4. Calendario de Hábitos
-Vistas diaria, semanal y mensual. Registro de ejercicio, alimentación, sueño, medicamentos e hidratación. Heatmap de adherencia (estilo GitHub contributions). Resumen semanal generado por Claude.
+### 3. Generador de Rutinas de Ejercicio ✅
+Cuestionario conversacional con Claude: edad, condición física, tiempo disponible, equipamiento, lesiones, objetivos. Genera una rutina semanal cardiovascular progresiva (HIIT, cardio moderado, fuerza) adaptada al perfil de riesgo.
 
-### 5. Score de Riesgo Cardiovascular
-Score visual 0–100 basado en métricas acumuladas. Desglose por factor con explicación de qué lo eleva. Proyecciones de mejora con cambios concretos. Siempre con disclaimer médico visible.
+**Características:**
+- Vista guiada paso a paso con timer de descanso configurable
+- Contexto de las últimas 5 rutinas para evitar repetición de ejercicios
+- Plan progresivo que evoluciona con las métricas del usuario
 
-### 6. Centro de Tips Personalizados
-Tips y micro-artículos generados con IA según el perfil del usuario. Contextual: si la presión está alta → tips de sodio; si hay poco sueño → impacto en el corazón; etc.
+### 4. Calendario de Hábitos ✅
+Tres tabs: **Hoy**, **Semana**, **Gestionar**. Hábitos fijos del sistema más hábitos personalizados del usuario con frecuencia configurable.
+
+**Hábitos fijos del sistema:**
+- Ejercicio, Alimentación, Sueño, Medicamento, Hidratación
+- Integración con la rutina de ejercicio activa (muestra ejercicios del día)
+
+**Hábitos personalizados:**
+- Nombre + emoji propios
+- Frecuencia: diario / semanal (días específicos) / mensual (día del mes)
+- Hora y lugar opcionales
+- Edición inline desde tab Hoy y desde Gestionar
+- Historial semanal de adherencia
+
+### 5. Score de Riesgo Cardiovascular ✅
+Score visual 0–100 basado en las métricas registradas. Desglose por factor con barras de progreso y badge de estado. Proyección de mejora. Siempre con disclaimer médico visible.
+
+**Factores del score:**
+- Frecuencia cardíaca — peso 35 pts
+- Horas de sueño — peso 35 pts
+- Nivel de estrés — peso 30 pts
+
+**Cálculo:** normalizado a las métricas disponibles (no penaliza por falta de datos).
+**Análisis IA:** Claude streaming genera 4 secciones (qué está bien, qué mejorar, plan semanal, proyección).
+
+### 6. Centro de Tips Personalizados ✅
+Dos secciones integradas en una sola pantalla.
+
+**"Para ti hoy" — IA personalizada:**
+- Claude genera 3 tips accionables basados en las métricas actuales del usuario
+- Streaming con efecto typewriter
+- Se personaliza según métricas en "atención" o "riesgo"
+- Botón de regenerar
+
+**"Artículos de salud" — contenido curado:**
+- 8 artículos sobre Corazón, Nutrición, Movimiento, Sueño y Estrés
+- Filtro por categoría (chips horizontales deslizables)
+- Cada artículo expandible inline con contenido completo en markdown
+- Fuente y tiempo de lectura visible
 
 ---
 
@@ -124,17 +165,23 @@ Tips y micro-artículos generados con IA según el perfil del usuario. Contextua
 | Base de datos | Supabase (PostgreSQL) | UUID anónimo como PK |
 | Gráficas | Recharts | Tendencias de métricas |
 | Deploy | Coolify (self-hosted) | Hetzner VPS |
-| PWA | next-pwa + Web App Manifest | Instalable en iOS/Android |
+| PWA | Web App Manifest + Service Worker manual | Instalable en iOS/Android |
 | Wearables (v2) | Web Bluetooth API | Xiaomi Band 10 en Android |
 | App nativa (v3) | Expo (React Native) | HealthKit + Google Fit |
 
 ### Variables de entorno requeridas
 
 ```
+# Supabase
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+
+# IA
 ANTHROPIC_API_KEY=
 GEMINI_API_KEY=
+
+# Supabase Access Token (solo para script de setup de BD)
+SUPABASE_ACCESS_TOKEN=
 ```
 
 ---
@@ -155,12 +202,29 @@ GEMINI_API_KEY=
 |---|---|
 | `metricas` | Registros diarios de métricas cardiovasculares (upsert por día) |
 | `habitos` | Hábitos fijos por día: ejercicio, alimentacion, sueno, medicamento, hidratacion |
-| `habitos_definicion` | Hábitos personalizados del usuario (nombre + emoji) |
-| `habitos_registro` | Completados diarios de hábitos custom + ejercicios de rutina |
+| `habitos_definicion` | Hábitos personalizados: nombre, emoji, frecuencia (diario/semanal/mensual), hora, lugar, dias_semana[], dia_mes |
+| `habitos_registro` | Completados diarios de hábitos custom + ejercicios de rutina del día |
 | `recetas_guardadas` | Recetas guardadas con imagen, calificación de estrellas |
 | `listas_mercado` | Listas de compras generadas por IA (checklist persistido en localStorage) |
 | `rutinas` | Planes de ejercicio semanales generados por IA (JSON con ejercicios por bloque) |
 | `perfil_usuario` | Perfil anónimo del usuario (edad, objetivos, disclaimer aceptado) |
+
+### Schema `habitos_definicion`
+```sql
+create table habitos_definicion (
+  id uuid default gen_random_uuid() primary key,
+  uid text not null,
+  nombre text not null,
+  emoji text not null default '✅',
+  frecuencia text not null default 'diario', -- 'diario' | 'semanal' | 'mensual'
+  hora text,                                  -- '08:00'
+  lugar text,                                 -- 'Gimnasio', 'Casa', etc.
+  dias_semana text[] default '{}',            -- ['lun','mie','vie'] para semanal
+  dia_mes int,                                -- 1-31 para mensual
+  activo boolean default true,
+  created_at timestamptz default now()
+);
+```
 
 ---
 
@@ -200,7 +264,7 @@ Usuario (iOS/Android/Web)
 - [x] Layout mobile-first: sidebar (desktop) + bottom nav (móvil)
 - [x] Sistema UUID anónimo (localStorage + Supabase)
 - [x] Tablas en Supabase
-- [x] PWA manifest
+- [x] PWA manifest + Service Worker
 - [x] Onboarding con disclaimer médico obligatorio
 - [x] Deploy en Coolify con CI/CD automático
 
@@ -211,36 +275,42 @@ Usuario (iOS/Android/Web)
 - [x] Análisis IA con Claude streaming
 - [x] API route `/api/analisis-metricas`
 - [x] Edición inline de métricas directamente en las tarjetas
-- [x] Input de sueño en horas + minutos (ej. 6h 55m)
-- [x] Presión arterial removida del MVP
+- [x] Input de sueño en horas + minutos
 
-### Semana 5–6 — IA Conversacional ✅ Completo
+### Semana 5–6 — IA Conversacional ✅
 - [x] Chat de recetas con streaming en tiempo real
 - [x] Generación de imagen del plato al terminar (Imagen 3)
 - [x] Guardar recetas favoritas con imagen (Supabase Storage)
-- [x] Vista de receta completa full-screen con botón regresar (createPortal)
+- [x] Vista de receta completa full-screen (createPortal)
 - [x] Calificación de estrellas en recetas guardadas
-- [x] Tab Mercado: lista de compras generada por IA con ingredientes de la receta
-- [x] Checklist interactivo de mercado con contexto histórico de listas anteriores
+- [x] Tab Mercado: lista de compras generada por IA
+- [x] Checklist interactivo persistido en localStorage
 - [x] Cuestionario conversacional para rutinas
-- [x] Generación de rutina semanal personalizada con contexto de métricas e historial
-- [x] Vista de rutina guiada paso a paso con timer de descanso
+- [x] Generación de rutina semanal con contexto de métricas e historial
+- [x] Contexto de ejercicios previos para evitar repetición
+- [x] Vista guiada paso a paso con timer de descanso
 
-### Semana 7–8 — Hábitos + Polish + Launch
-- [ ] Calendario de hábitos (diario/semanal/mensual)
-- [ ] Heatmap de adherencia
-- [ ] Resumen semanal generado por Claude
-- [ ] Score de riesgo cardiovascular completo
-- [ ] Centro de tips personalizados
-- [ ] Arquitectura de rate limiting (base para freemium)
-- [ ] Pruebas en iOS Safari y Android Chrome como PWA instalada
-- [ ] Íconos PWA (icon-192.png, icon-512.png)
+### Semana 7–8 — Hábitos + Score + Tips ✅
+- [x] Calendario de hábitos — tabs Hoy / Semana / Gestionar
+- [x] Hábitos fijos del sistema (ejercicio, alimentación, sueño, medicamento, hidratación)
+- [x] Hábitos personalizados con nombre + emoji
+- [x] Frecuencia configurable: diario / semanal / mensual
+- [x] Hora y lugar por hábito
+- [x] Edición inline desde Hoy y desde Gestionar
+- [x] Integración rutina de ejercicio → hábitos del día
+- [x] Score de riesgo cardiovascular 0–100 (gauge SVG animado)
+- [x] Desglose por factor con barras de progreso
+- [x] Análisis IA del score en streaming
+- [x] Centro de Tips: tips IA personalizados por métricas
+- [x] 8 artículos curados con filtro por categoría y expansión inline
 
 ### v2 — Wearables y Mejoras
 - [ ] Xiaomi Band 10 via Web Bluetooth API (Android Chrome)
-- [ ] Notificaciones push para recordatorios
-- [ ] Modo offline básico (service worker)
+- [ ] Notificaciones push para recordatorios (VAPID / Web Push)
+- [ ] Modo offline básico (caché con service worker)
 - [ ] Activar sistema freemium con Stripe
+- [ ] Heatmap de adherencia (estilo GitHub contributions)
+- [ ] Resumen semanal de hábitos generado por Claude
 
 ### v3 — App Nativa
 - [ ] React Native (Expo) con código compartido
