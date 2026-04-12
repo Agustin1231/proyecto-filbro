@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pulso — Tu corazón, tus hábitos, tu vida.
 
-## Getting Started
+App PWA de salud cardiovascular potenciada por IA. Monitorea tus métricas, descubre recetas cardioprotectoras, genera rutinas personalizadas y construye hábitos saludables — sin cuenta, sin datos personales.
 
-First, run the development server:
+---
+
+## Módulos
+
+| # | Módulo | Estado |
+|---|--------|--------|
+| 1 | Dashboard de Métricas Cardiovasculares | ✅ Completo |
+| 2 | Asistente de Recetas (Claude streaming + Gemini imagen) | ✅ Completo |
+| 3 | Generador de Rutinas de Ejercicio | 🚧 En desarrollo |
+| 4 | Calendario de Hábitos | 🚧 En desarrollo |
+| 5 | Score de Riesgo Cardiovascular | 🚧 En desarrollo |
+| 6 | Centro de Tips Personalizados | 🚧 En desarrollo |
+
+---
+
+## Stack
+
+- **Frontend:** Next.js 15 (App Router) + Tailwind CSS 4 + shadcn/ui
+- **IA Texto:** Claude API via Vercel AI SDK (streaming)
+- **IA Imágenes:** Gemini API (Google)
+- **Base de datos:** Supabase (PostgreSQL)
+- **Gráficas:** Recharts
+- **Deploy:** Coolify (self-hosted en Hetzner VPS)
+- **PWA:** Instalable en iOS y Android sin App Store
+
+---
+
+## Variables de entorno
+
+Crea un archivo `.env.local` en la raíz con:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+ANTHROPIC_API_KEY=sk-ant-...
+GEMINI_API_KEY=AIza...
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Desarrollo local
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm install
+npm run dev
+```
 
-## Learn More
+Abre [http://localhost:3000](http://localhost:3000) en tu browser.
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Decisiones de diseño
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Sin login:** UUID anónimo generado en el dispositivo. Sin email, sin contraseña.
+- **Dark mode por defecto:** Paleta Obsidian + Coral Pulse, sin los verdes clichés del sector salud.
+- **Disclaimer médico obligatorio:** No se puede saltear en el onboarding. Claude está instruido para no diagnosticar.
+- **Mobile-first:** Sidebar en desktop, bottom nav en móvil.
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> Pulso es una herramienta de bienestar personal y educación preventiva. La información proporcionada **no constituye diagnóstico médico**. Siempre consultá a un profesional de la salud.
