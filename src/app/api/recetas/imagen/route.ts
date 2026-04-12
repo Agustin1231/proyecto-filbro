@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Modality } from "@google/genai";
 import { uploadRecetaImagen } from "@/lib/supabase/recetas";
 
 export const runtime = "nodejs";
@@ -23,23 +23,27 @@ export async function POST(req: Request) {
       descripcion ?? "Healthy cardiovascular dish, Mediterranean style"
     }. Shot from above, natural lighting, rustic wooden table, vibrant colors, appetizing, high resolution.`;
 
-    console.log("[imagen] Llamando a Imagen 3...");
-    const response = await ai.models.generateImages({
-      model: "imagen-3.0-generate-001",
-      prompt,
-      config: { numberOfImages: 1 },
+    console.log("[imagen] Llamando al modelo de imagen...");
+    const response = await ai.models.generateContent({
+      model: "gemini-3.1-flash-image-preview",
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      config: { responseModalities: [Modality.IMAGE, Modality.TEXT] },
     });
-    console.log("[imagen] Respuesta recibida de Imagen 3");
+    console.log("[imagen] Respuesta recibida");
 
-    const imageBytes = response.generatedImages?.[0]?.image?.imageBytes;
+    // Buscar la parte de imagen en la respuesta
+    const parts = response.candidates?.[0]?.content?.parts ?? [];
+    const imagePart = parts.find((p) => p.inlineData?.data);
 
-    if (!imageBytes) {
-      console.error("[imagen] imageBytes vacío, respuesta completa:", JSON.stringify(response));
-      return Response.json({ error: "No se pudo generar la imagen", detalle: "imageBytes vacío" }, { status: 500 });
+    if (!imagePart?.inlineData?.data) {
+      console.error("[imagen] No se encontró imagen en la respuesta:", JSON.stringify(response));
+      return Response.json({ error: "No se pudo generar la imagen", detalle: "Sin datos de imagen en respuesta" }, { status: 500 });
     }
 
-    console.log("[imagen] imageBytes OK, tamaño:", imageBytes.length);
-    const base64DataUrl = `data:image/png;base64,${imageBytes}`;
+    const { data: imageBytes, mimeType = "image/png" } = imagePart.inlineData;
+    console.log("[imagen] Imagen OK, mimeType:", mimeType, "tamaño:", imageBytes.length);
+
+    const base64DataUrl = `data:${mimeType};base64,${imageBytes}`;
 
     // Subir a Supabase Storage si hay uid
     if (uid) {
@@ -57,7 +61,7 @@ export async function POST(req: Request) {
   } catch (err) {
     const mensaje = err instanceof Error ? err.message : String(err);
     const stack = err instanceof Error ? err.stack : undefined;
-    console.error("Error generando imagen:", err);
+    console.error("[imagen] Error:", err);
     return Response.json({ error: "Error al generar imagen", detalle: mensaje, stack }, { status: 500 });
   }
 }
