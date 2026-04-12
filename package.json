@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "setup-db": "node scripts/setup-db.mjs"
   },
   "dependencies": {
     "next": "^15.3.0",
@@ -43,6 +44,8 @@
     "tailwindcss": "^4",
     "@tailwindcss/postcss": "^4",
     "eslint": "^9",
-    "eslint-config-next": "^15.3.0"
+    "eslint-config-next": "^15.3.0",
+    "pg": "^8.13.3",
+    "dotenv": "^16.4.7"
   }
 }

@@ -1,16 +1,23 @@
-import { Sidebar } from "@/components/layout/sidebar";
-import { Header }  from "@/components/layout/header";
+import { Sidebar }   from "@/components/layout/sidebar";
+import { Header }    from "@/components/layout/header";
+import { BottomNav } from "@/components/layout/bottom-nav";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden bg-background">
+      {/* Sidebar — solo desktop */}
       <Sidebar />
-      <div className="flex flex-1 flex-col overflow-hidden pl-64">
+
+      {/* Contenido principal */}
+      <div className="flex flex-1 flex-col overflow-hidden md:pl-64">
         <Header />
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-20 md:pb-6">
           {children}
         </main>
       </div>
+
+      {/* Bottom nav — solo móvil */}
+      <BottomNav />
     </div>
   );
 }
