@@ -630,7 +630,7 @@ function RecetaCard({ receta, onVerCompleta, onEliminar }: { receta: RecetaRow; 
               )}
             </div>
           )}
-          <div className="flex items-center gap-1.5 ml-auto">
+          <div className="flex flex-col items-end gap-0.5 ml-auto shrink-0">
             {receta.calificacion && (
               <div className="flex gap-0.5">
                 {[1,2,3,4,5].map((s) => <span key={s} className={`text-[10px] ${s <= receta.calificacion! ? "text-amber" : "text-border"}`}>★</span>)}
