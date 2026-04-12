@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { ChefHat, Sparkles, BookOpen, Loader2, ImageIcon, Bookmark, Trash2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAnonymousId } from "@/hooks/use-anonymous-id";
@@ -13,36 +13,72 @@ function extraerTitulo(texto: string): string {
   return match?.[1]?.trim() ?? "Receta cardioprotectora";
 }
 
+/** Convierte **texto** en <strong> dentro de cualquier cadena */
+function renderBold(text: string): React.ReactNode {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  if (parts.length === 1) return text;
+  return (
+    <>
+      {parts.map((p, i) =>
+        p.startsWith("**") && p.endsWith("**")
+          ? <strong key={i} className="font-semibold text-foreground">{p.slice(2, -2)}</strong>
+          : p
+      )}
+    </>
+  );
+}
+
 function formatearContenido(texto: string): React.ReactNode {
   const lineas = texto.split("\n");
   return lineas.map((linea, i) => {
+    // Título ##
     if (linea.startsWith("## ")) {
       return <h2 key={i} className="text-lg font-bold text-foreground mt-4 mb-2 first:mt-0">{linea.slice(3)}</h2>;
     }
+    // Sección ###
     if (linea.startsWith("### ")) {
-      return <h3 key={i} className="text-sm font-semibold text-teal uppercase tracking-wide mt-4 mb-1">{linea.slice(4)}</h3>;
+      return <h3 key={i} className="text-xs font-semibold text-teal uppercase tracking-widest mt-4 mb-2">{linea.slice(4)}</h3>;
     }
-    if (linea.startsWith("**") && linea.endsWith("**")) {
-      return <p key={i} className="text-sm font-semibold text-foreground">{linea.slice(2, -2)}</p>;
+    // Línea completamente en negrita **texto**
+    if (linea.match(/^\*\*.+\*\*$/) && !linea.slice(2, -2).includes("**")) {
+      const inner = linea.slice(2, -2);
+      // Si tiene | es la línea "Porciones: X | Tiempo: X"
+      if (inner.includes("|")) {
+        const chunks = inner.split("|").map(c => c.trim());
+        return (
+          <p key={i} className="text-sm text-muted-foreground mb-2 flex gap-3 flex-wrap">
+            {chunks.map((c, j) => (
+              <span key={j}>{renderBold(c)}</span>
+            ))}
+          </p>
+        );
+      }
+      return <p key={i} className="text-sm font-semibold text-foreground mb-1">{inner}</p>;
     }
-    if (linea.match(/^\*\*.+\*\*/)) {
-      const parts = linea.split(/(\*\*[^*]+\*\*)/g);
+    // Ítem de lista con guión -
+    if (linea.startsWith("- ")) {
       return (
-        <p key={i} className="text-sm text-foreground/90 mb-1">
-          {parts.map((p, j) =>
-            p.startsWith("**") ? <strong key={j}>{p.slice(2, -2)}</strong> : p
-          )}
-        </p>
+        <div key={i} className="flex gap-2 text-sm text-foreground/90 mb-1">
+          <span className="text-muted-foreground shrink-0 mt-0.5">•</span>
+          <span>{renderBold(linea.slice(2))}</span>
+        </div>
       );
     }
-    if (linea.startsWith("- ")) {
-      return <li key={i} className="text-sm text-foreground/90 ml-3 list-disc">{linea.slice(2)}</li>;
-    }
+    // Ítem numerado 1. 2. 3. ...
     if (linea.match(/^\d+\.\s/)) {
-      return <li key={i} className="text-sm text-foreground/90 ml-3 list-decimal">{linea.replace(/^\d+\.\s/, "")}</li>;
+      const num = linea.match(/^(\d+)\.\s/)?.[1];
+      const content = linea.replace(/^\d+\.\s/, "");
+      return (
+        <div key={i} className="flex gap-2 text-sm text-foreground/90 mb-1.5">
+          <span className="text-teal font-bold shrink-0 min-w-[1.25rem] text-right">{num}.</span>
+          <span>{renderBold(content)}</span>
+        </div>
+      );
     }
-    if (linea.trim() === "") return <br key={i} />;
-    return <p key={i} className="text-sm text-foreground/90">{linea}</p>;
+    // Línea vacía
+    if (linea.trim() === "") return <div key={i} className="h-1" />;
+    // Párrafo normal (con posible inline bold)
+    return <p key={i} className="text-sm text-foreground/90 mb-1 leading-relaxed">{renderBold(linea)}</p>;
   });
 }
 
@@ -62,7 +98,9 @@ export function RecetasClient() {
 
   // Generación
   const [estado, setEstado] = useState<EstadoGeneracion>("idle");
-  const [recetaTexto, setRecetaTexto] = useState("");
+  const [recetaTexto, setRecetaTexto] = useState("");       // texto completo recibido
+  const [textoMostrado, setTextoMostrado] = useState("");   // texto revelado (typewriter)
+  const recetaRef = useRef("");                             // ref sin stale closure
   const [imagenUrl, setImagenUrl] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [guardada, setGuardada] = useState(false);
@@ -72,12 +110,32 @@ export function RecetasClient() {
   const [guardadas, setGuardadas] = useState<RecetaRow[]>([]);
   const [cargandoGuardadas, setCargandoGuardadas] = useState(false);
 
+  // ── efecto typewriter ───────────────────────────────────────────────────
+  useEffect(() => {
+    if (textoMostrado.length >= recetaRef.current.length) return;
+
+    const full = recetaRef.current;
+    const shown = textoMostrado;
+
+    // Avanzar una palabra (hasta el siguiente espacio)
+    const nextSpace = full.indexOf(" ", shown.length);
+    const nextEnd = nextSpace === -1 ? full.length : nextSpace + 1;
+
+    const timer = setTimeout(() => {
+      setTextoMostrado(full.slice(0, nextEnd));
+    }, 35); // ~28 palabras/seg — sensación de teclado
+
+    return () => clearTimeout(timer);
+  }, [recetaTexto, textoMostrado]);
+
   // ── generación de receta ────────────────────────────────────────────────
   const generarReceta = useCallback(async () => {
     if (!ingredientes.trim() || estado === "streaming" || estado === "imagen") return;
 
     setEstado("streaming");
     setRecetaTexto("");
+    setTextoMostrado("");
+    recetaRef.current = "";
     setImagenUrl(null);
     setGuardada(false);
     setError(null);
@@ -110,7 +168,8 @@ export function RecetasClient() {
               const chunk = JSON.parse(line.slice(2));
               if (typeof chunk === "string") {
                 textoCompleto += chunk;
-                setRecetaTexto(textoCompleto);
+                recetaRef.current = textoCompleto;
+                setRecetaTexto(textoCompleto); // dispara el typewriter
               }
             } catch {
               // skip malformed chunk
@@ -119,7 +178,7 @@ export function RecetasClient() {
         }
       }
 
-      // Texto completo → generar imagen
+      // Streaming terminado → generar imagen
       setEstado("imagen");
       await generarImagen(extraerTitulo(textoCompleto));
       setEstado("completo");
@@ -137,7 +196,6 @@ export function RecetasClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ titulo }),
       });
-
       if (res.ok) {
         const data = await res.json();
         if (data.imagen) setImagenUrl(data.imagen);
@@ -150,8 +208,8 @@ export function RecetasClient() {
   // ── guardar receta ──────────────────────────────────────────────────────
   const handleGuardar = async () => {
     if (!uid || !recetaTexto || guardando || guardada) return;
-
     setGuardando(true);
+
     const titulo = extraerTitulo(recetaTexto);
     const ingredientesArray = ingredientes
       .split(/[,\n]+/)
@@ -190,14 +248,19 @@ export function RecetasClient() {
   const resetear = () => {
     setEstado("idle");
     setRecetaTexto("");
+    setTextoMostrado("");
+    recetaRef.current = "";
     setImagenUrl(null);
     setGuardada(false);
     setError(null);
     setIngredientes("");
   };
 
-  // ─── render ─────────────────────────────────────────────────────────────
+  // ── helpers de estado ───────────────────────────────────────────────────
+  const escribiendo = textoMostrado.length < recetaRef.current.length || estado === "streaming";
+  const hayContenido = textoMostrado.length > 0;
 
+  // ─── render ─────────────────────────────────────────────────────────────
   return (
     <div className="space-y-5 animate-fade-in">
 
@@ -231,7 +294,7 @@ export function RecetasClient() {
       {vista === "nueva" && (
         <div className="space-y-4">
 
-          {/* Input de ingredientes (solo en idle o después de completar) */}
+          {/* Input ingredientes */}
           {(estado === "idle" || estado === "completo") && (
             <div className="rounded-xl border border-border bg-surface p-4 space-y-3">
               <div>
@@ -276,8 +339,8 @@ export function RecetasClient() {
             </div>
           )}
 
-          {/* Streaming / resultado */}
-          {(estado === "streaming" || estado === "imagen" || estado === "completo") && recetaTexto && (
+          {/* Resultado streaming */}
+          {(estado === "streaming" || estado === "imagen" || estado === "completo") && hayContenido && (
             <div className="rounded-xl border border-teal/25 bg-teal/5 overflow-hidden">
 
               {/* Header */}
@@ -286,52 +349,54 @@ export function RecetasClient() {
                   <ChefHat className="h-4 w-4 text-teal" />
                   <span className="text-sm font-bold text-teal">Receta cardioprotectora</span>
                 </div>
-                {estado === "streaming" && (
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                    Generando...
-                  </div>
-                )}
                 {estado === "imagen" && (
                   <div className="flex items-center gap-1.5 text-xs text-purple">
                     <ImageIcon className="h-3 w-3" />
                     <Loader2 className="h-3 w-3 animate-spin" />
-                    Generando imagen...
+                    <span>Generando imagen...</span>
                   </div>
                 )}
               </div>
 
               <div className="p-4 space-y-4">
-                {/* Imagen generada */}
+                {/* Imagen — skeleton mientras carga */}
                 {(estado === "imagen" || estado === "completo") && (
-                  <div className="rounded-lg overflow-hidden bg-surface border border-border aspect-video flex items-center justify-center">
+                  <div className="rounded-lg overflow-hidden border border-border aspect-video">
                     {imagenUrl ? (
                       <img
                         src={imagenUrl}
                         alt="Foto generada del plato"
                         className="w-full h-full object-cover"
                       />
-                    ) : estado === "imagen" ? (
-                      <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                        <div className="relative">
-                          <ImageIcon className="h-8 w-8 opacity-30" />
-                          <Loader2 className="h-4 w-4 animate-spin text-purple absolute -bottom-1 -right-1" />
+                    ) : (
+                      /* Skeleton shimmer */
+                      <div className="w-full h-full bg-surface-2 relative overflow-hidden">
+                        <div className="absolute inset-0 animate-shimmer"
+                          style={{ background: "linear-gradient(90deg, transparent 0%, rgba(163,113,247,0.07) 50%, transparent 100%)" }}
+                        />
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                          <div className="w-10 h-10 rounded-full bg-purple/10 border border-purple/20 flex items-center justify-center">
+                            <ImageIcon className="h-5 w-5 text-purple/50" />
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Loader2 className="h-3 w-3 animate-spin text-purple/70" />
+                            <span className="text-xs text-muted-foreground">Generando imagen con IA...</span>
+                          </div>
                         </div>
-                        <span className="text-xs">Generando foto del plato con IA...</span>
                       </div>
-                    ) : null}
+                    )}
                   </div>
                 )}
 
-                {/* Texto de la receta */}
-                <div className="prose-sm">
-                  {formatearContenido(recetaTexto)}
-                  {estado === "streaming" && (
-                    <span className="inline-block w-0.5 h-4 bg-teal ml-0.5 animate-pulse" />
+                {/* Texto de la receta — typewriter */}
+                <div>
+                  {formatearContenido(textoMostrado)}
+                  {escribiendo && (
+                    <span className="inline-block w-0.5 h-4 bg-teal ml-0.5 animate-blink align-middle" />
                   )}
                 </div>
 
-                {/* Guardar */}
+                {/* Acciones */}
                 {estado === "completo" && (
                   <div className="flex items-center gap-3 pt-2 border-t border-border/50">
                     {!guardada ? (
@@ -341,11 +406,10 @@ export function RecetasClient() {
                         variant="ghost"
                         className="gap-2 text-teal border border-teal/30 hover:bg-teal/10"
                       >
-                        {guardando ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Bookmark className="h-4 w-4" />
-                        )}
+                        {guardando
+                          ? <Loader2 className="h-4 w-4 animate-spin" />
+                          : <Bookmark className="h-4 w-4" />
+                        }
                         {guardando ? "Guardando..." : "Guardar receta"}
                       </Button>
                     ) : (
@@ -367,8 +431,8 @@ export function RecetasClient() {
             </div>
           )}
 
-          {/* Estado idle sin texto */}
-          {estado === "idle" && !recetaTexto && (
+          {/* Estado idle vacío */}
+          {estado === "idle" && (
             <div className="rounded-xl border border-dashed border-border/60 bg-surface/50 p-8 text-center space-y-3">
               <div className="w-12 h-12 rounded-full bg-teal/10 border border-teal/20 flex items-center justify-center mx-auto">
                 <ChefHat className="h-6 w-6 text-teal/60" />
@@ -376,7 +440,7 @@ export function RecetasClient() {
               <div>
                 <p className="text-sm font-medium text-foreground/70">Escribe tus ingredientes</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Claude creará una receta cardioprotectora personalizada y Gemini generará la foto del plato.
+                  Claude creará una receta cardioprotectora y Gemini generará la foto del plato.
                 </p>
               </div>
             </div>
@@ -428,19 +492,12 @@ function RecetaCard({ receta, onEliminar }: { receta: RecetaRow; onEliminar: () 
 
   return (
     <div className="rounded-xl border border-border bg-surface overflow-hidden">
-      {/* Imagen */}
       {receta.imagen_url && (
         <div className="aspect-video overflow-hidden">
-          <img
-            src={receta.imagen_url}
-            alt={receta.titulo}
-            className="w-full h-full object-cover"
-          />
+          <img src={receta.imagen_url} alt={receta.titulo} className="w-full h-full object-cover" />
         </div>
       )}
-
       <div className="p-4 space-y-3">
-        {/* Header tarjeta */}
         <div className="flex items-start justify-between gap-2">
           <div>
             <h3 className="text-sm font-bold text-foreground leading-tight">{receta.titulo}</h3>
@@ -455,14 +512,10 @@ function RecetaCard({ receta, onEliminar }: { receta: RecetaRow; onEliminar: () 
           </button>
         </div>
 
-        {/* Ingredientes */}
         {receta.ingredientes?.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {receta.ingredientes.slice(0, 4).map((ing, i) => (
-              <span
-                key={i}
-                className="text-[10px] px-2 py-0.5 rounded-full bg-teal/10 text-teal border border-teal/20"
-              >
+              <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-teal/10 text-teal border border-teal/20">
                 {ing}
               </span>
             ))}
@@ -474,7 +527,6 @@ function RecetaCard({ receta, onEliminar }: { receta: RecetaRow; onEliminar: () 
           </div>
         )}
 
-        {/* Ver receta toggle */}
         <button
           onClick={() => setExpandida(!expandida)}
           className="text-xs text-teal hover:text-teal/80 font-medium"
@@ -483,8 +535,8 @@ function RecetaCard({ receta, onEliminar }: { receta: RecetaRow; onEliminar: () 
         </button>
 
         {expandida && (
-          <div className="pt-2 border-t border-border/50">
-            <div className="prose-sm text-xs leading-relaxed max-h-64 overflow-y-auto">
+          <div className="pt-2 border-t border-border/50 max-h-64 overflow-y-auto">
+            <div className="text-xs leading-relaxed">
               {formatearContenido(receta.contenido)}
             </div>
           </div>
