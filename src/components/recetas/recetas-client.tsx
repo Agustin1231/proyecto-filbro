@@ -133,7 +133,8 @@ async function leerStream(
 
 // ─── tipos ────────────────────────────────────────────────────────────────────
 
-type Vista = "nueva" | "guardadas" | "mercado";
+type TabPrincipal = "recetas" | "mercado";
+type SubTabRecetas = "nueva" | "guardadas";
 type EstadoGeneracion = "idle" | "streaming" | "imagen" | "completo";
 
 interface ChatMsg { role: "user" | "assistant"; content: string; esReceta?: boolean; }
@@ -142,7 +143,8 @@ interface ChatMsg { role: "user" | "assistant"; content: string; esReceta?: bool
 
 export function RecetasClient() {
   const uid = useAnonymousId();
-  const [vista, setVista] = useState<Vista>("nueva");
+  const [tabPrincipal, setTabPrincipal] = useState<TabPrincipal>("recetas");
+  const [subTab, setSubTab] = useState<SubTabRecetas>("nueva");
   const [ingredientes, setIngredientes] = useState("");
 
   // Generación
@@ -310,30 +312,42 @@ export function RecetasClient() {
   return (
     <>
       <div className="space-y-5 animate-fade-in">
-        {/* Tabs */}
-        <div className="flex gap-1 rounded-xl bg-surface p-1 border border-border w-fit flex-wrap">
-          {(["nueva", "guardadas", "mercado"] as Vista[]).map((v) => {
-            const labels: Record<Vista, { label: string; icon: React.ReactNode }> = {
-              nueva: { label: "Nueva receta", icon: <ChefHat className="h-3.5 w-3.5" /> },
-              guardadas: { label: "Guardadas", icon: <BookOpen className="h-3.5 w-3.5" /> },
-              mercado: { label: "Mercado", icon: <ShoppingCart className="h-3.5 w-3.5" /> },
-            };
-            return (
-              <button
-                key={v}
-                onClick={() => { setVista(v); if (v === "guardadas") cargarGuardadas(); }}
-                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                  vista === v ? "bg-teal/15 text-teal border border-teal/30" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {labels[v].icon}{labels[v].label}
-              </button>
-            );
-          })}
+        {/* Tabs principales */}
+        <div className="flex gap-1 rounded-xl bg-surface p-1 border border-border w-fit">
+          <button
+            onClick={() => setTabPrincipal("recetas")}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${tabPrincipal === "recetas" ? "bg-teal/15 text-teal border border-teal/30" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <ChefHat className="h-3.5 w-3.5" /> Recetas
+          </button>
+          <button
+            onClick={() => setTabPrincipal("mercado")}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${tabPrincipal === "mercado" ? "bg-teal/15 text-teal border border-teal/30" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <ShoppingCart className="h-3.5 w-3.5" /> Mercado
+          </button>
         </div>
 
+        {/* ── Sección Recetas ───────────────────────────────────────────────── */}
+        {tabPrincipal === "recetas" && (
+          <div className="flex gap-1 rounded-xl bg-surface p-1 border border-border w-fit">
+            <button
+              onClick={() => setSubTab("nueva")}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${subTab === "nueva" ? "bg-teal/15 text-teal border border-teal/30" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <Sparkles className="h-3.5 w-3.5" /> Nueva receta
+            </button>
+            <button
+              onClick={() => { setSubTab("guardadas"); cargarGuardadas(); }}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${subTab === "guardadas" ? "bg-teal/15 text-teal border border-teal/30" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <BookOpen className="h-3.5 w-3.5" /> Recetas guardadas
+            </button>
+          </div>
+        )}
+
         {/* ── Nueva receta ─────────────────────────────────────────────────── */}
-        {vista === "nueva" && (
+        {tabPrincipal === "recetas" && subTab === "nueva" && (
           <div className="space-y-4">
             {(estado === "idle" || estado === "completo") && (
               <div className="rounded-xl border border-border bg-surface p-4 space-y-3">
@@ -530,7 +544,7 @@ export function RecetasClient() {
         )}
 
         {/* ── Guardadas ────────────────────────────────────────────────────── */}
-        {vista === "guardadas" && (
+        {tabPrincipal === "recetas" && subTab === "guardadas" && (
           <div className="space-y-3">
             {cargandoGuardadas ? (
               <div className="flex items-center justify-center h-32 gap-2 text-muted-foreground">
@@ -552,8 +566,8 @@ export function RecetasClient() {
         )}
 
         {/* ── Mercado ──────────────────────────────────────────────────────── */}
-        {vista === "mercado" && (
-          <MercadoView uid={uid} ingredientesRecetas={guardadas.flatMap((r) => r.ingredientes)} />
+        {tabPrincipal === "mercado" && (
+          <MercadoView ingredientesRecetas={guardadas.flatMap((r) => r.ingredientes)} />
         )}
       </div>
 
@@ -669,7 +683,25 @@ function RecetaDetalle({ receta, onCerrar, onEliminar, onCalificar }: { receta: 
 
 // ─── mercado ──────────────────────────────────────────────────────────────────
 
-function MercadoView({ uid, ingredientesRecetas }: { uid: string | null; ingredientesRecetas: string[] }) {
+function parsearItemsMercado(contenido: string): { seccion: string; items: string[] }[] {
+  const secciones: { seccion: string; items: string[] }[] = [];
+  let seccionActual = "";
+  let itemsActuales: string[] = [];
+  for (const linea of contenido.split("\n")) {
+    if (linea.startsWith("### ")) {
+      if (seccionActual && itemsActuales.length > 0) secciones.push({ seccion: seccionActual, items: itemsActuales });
+      seccionActual = linea.slice(4).trim();
+      itemsActuales = [];
+    } else if (linea.trim().startsWith("- ")) {
+      itemsActuales.push(linea.slice(linea.indexOf("- ") + 2).trim());
+    }
+  }
+  if (seccionActual && itemsActuales.length > 0) secciones.push({ seccion: seccionActual, items: itemsActuales });
+  return secciones;
+}
+
+function MercadoView({ ingredientesRecetas }: { ingredientesRecetas: string[] }) {
+  const uid = useAnonymousId();
   const [periodo, setPeriodo] = useState<"semanal" | "mensual">("semanal");
   const [estado, setEstado] = useState<"idle" | "streaming" | "completo">("idle");
   const [listaTexto, setListaTexto] = useState("");
@@ -762,17 +794,7 @@ function MercadoView({ uid, ingredientesRecetas }: { uid: string | null; ingredi
   };
 
   if (listaDetalle) {
-    return (
-      <div className="space-y-3">
-        <button onClick={() => setListaDetalle(null)} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-          <ArrowLeft className="h-4 w-4" /> Volver
-        </button>
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="text-xs text-muted-foreground mb-3">{new Date(listaDetalle.created_at).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })} · {listaDetalle.periodo}</p>
-          {formatearContenido(listaDetalle.contenido)}
-        </div>
-      </div>
-    );
+    return <ListaMercadoChecklist lista={listaDetalle} onVolver={() => setListaDetalle(null)} />;
   }
 
   return (
@@ -908,6 +930,90 @@ function MercadoView({ uid, ingredientesRecetas }: { uid: string | null; ingredi
               </div>
             </button>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── checklist de lista de mercado ────────────────────────────────────────────
+
+function ListaMercadoChecklist({ lista, onVolver }: { lista: ListaMercadoRow; onVolver: () => void }) {
+  const [completados, setCompletados] = useState<Set<string>>(new Set());
+  const secciones = parsearItemsMercado(lista.contenido);
+  const totalItems = secciones.reduce((acc, s) => acc + s.items.length, 0);
+  const totalCompletados = completados.size;
+
+  const toggle = (item: string) => {
+    setCompletados((prev) => {
+      const next = new Set(prev);
+      if (next.has(item)) next.delete(item);
+      else next.add(item);
+      return next;
+    });
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <button onClick={onVolver} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="h-4 w-4" /> Volver
+        </button>
+        <div className="ml-auto flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">{totalCompletados}/{totalItems} comprados</span>
+          {totalCompletados > 0 && (
+            <button onClick={() => setCompletados(new Set())} className="text-xs text-muted-foreground hover:text-foreground transition-colors">Reiniciar</button>
+          )}
+        </div>
+      </div>
+
+      {/* Barra de progreso */}
+      {totalItems > 0 && (
+        <div className="h-1.5 bg-surface-2 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-teal rounded-full transition-all duration-300"
+            style={{ width: `${(totalCompletados / totalItems) * 100}%` }}
+          />
+        </div>
+      )}
+
+      <div className="space-y-4">
+        {secciones.length > 0 ? secciones.map((sec) => (
+          <div key={sec.seccion}>
+            <h3 className="text-xs font-semibold text-teal uppercase tracking-widest mb-2">{sec.seccion}</h3>
+            <div className="space-y-1">
+              {sec.items.map((item) => {
+                const done = completados.has(item);
+                return (
+                  <button
+                    key={item}
+                    onClick={() => toggle(item)}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border text-left transition-all ${
+                      done ? "border-teal/20 bg-teal/5" : "border-border bg-surface hover:border-teal/20 hover:bg-surface-2"
+                    }`}
+                  >
+                    <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                      done ? "border-teal bg-teal" : "border-border"
+                    }`}>
+                      {done && <span className="text-background text-[10px] font-bold">✓</span>}
+                    </div>
+                    <span className={`text-sm flex-1 transition-all ${done ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                      {item}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )) : (
+          <div className="p-4">{formatearContenido(lista.contenido)}</div>
+        )}
+      </div>
+
+      {totalCompletados === totalItems && totalItems > 0 && (
+        <div className="rounded-xl border border-teal/30 bg-teal/5 p-4 text-center space-y-1">
+          <p className="text-sm font-semibold text-teal">¡Lista completada!</p>
+          <p className="text-xs text-muted-foreground">Ya tienes todo lo de tu lista del mercado.</p>
         </div>
       )}
     </div>
