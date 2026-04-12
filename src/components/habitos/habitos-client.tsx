@@ -106,38 +106,42 @@ function formDesdeRow(h: HabitoDefinicionRow): HabitoFormData {
 // ─── ToggleItem ───────────────────────────────────────────────────────────────
 
 function ToggleItem({
-  emoji, label, sublabel, done, onToggle, cargando = false,
+  emoji, label, sublabel, done, onToggle, cargando = false, onEdit,
 }: {
   emoji: string; label: string; sublabel?: string;
   done: boolean; onToggle: () => void; cargando?: boolean;
+  onEdit?: () => void;
 }) {
   return (
-    <button
-      onClick={onToggle}
-      disabled={cargando}
-      className={cn(
-        "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border text-left transition-all active:scale-[0.98]",
-        done ? "border-teal/30 bg-teal/8" : "border-border bg-surface hover:border-border/80 hover:bg-surface-2"
+    <div className={cn(
+      "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all group",
+      done ? "border-teal/30 bg-teal/8" : "border-border bg-surface hover:border-border/80 hover:bg-surface-2"
+    )}>
+      <button onClick={onToggle} disabled={cargando}
+        className="flex items-center gap-3 flex-1 text-left min-w-0 active:scale-[0.98]">
+        <div className={cn(
+          "h-6 w-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all",
+          done ? "border-teal bg-teal" : "border-border"
+        )}>
+          {cargando
+            ? <Loader2 className="h-3 w-3 animate-spin text-background" />
+            : done && <Check className="h-3 w-3 text-background" strokeWidth={3} />}
+        </div>
+        <span className="text-base shrink-0">{emoji}</span>
+        <div className="flex-1 min-w-0">
+          <p className={cn("text-sm transition-colors", done ? "line-through text-muted-foreground" : "text-foreground")}>
+            {label}
+          </p>
+          {sublabel && <p className="text-xs text-muted-foreground mt-0.5">{sublabel}</p>}
+        </div>
+      </button>
+      {onEdit && (
+        <button onClick={onEdit}
+          className="shrink-0 p-1 text-muted-foreground/40 hover:text-foreground md:text-muted-foreground/0 md:group-hover:text-muted-foreground transition-colors">
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
       )}
-    >
-      <div className={cn(
-        "h-6 w-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all",
-        done ? "border-teal bg-teal" : "border-border"
-      )}>
-        {cargando
-          ? <Loader2 className="h-3 w-3 animate-spin text-background" />
-          : done && <Check className="h-3 w-3 text-background" strokeWidth={3} />}
-      </div>
-      <span className="text-base shrink-0">{emoji}</span>
-      <div className="flex-1 min-w-0">
-        <p className={cn("text-sm transition-colors", done ? "line-through text-muted-foreground" : "text-foreground")}>
-          {label}
-        </p>
-        {sublabel && (
-          <p className="text-xs text-muted-foreground mt-0.5">{sublabel}</p>
-        )}
-      </div>
-    </button>
+    </div>
   );
 }
 
@@ -510,6 +514,12 @@ export function HabitosClient() {
               ))}
 
               {habitosHoy.map((h) => {
+                if (editandoId === h.id) {
+                  return (
+                    <HabitoForm key={h.id} inicial={formInicial}
+                      onGuardar={handleGuardar} onCancelar={cerrarForm} guardando={guardando} />
+                  );
+                }
                 const sublabel = [
                   h.hora ? `⏰ ${h.hora}` : null,
                   h.lugar ? `📍 ${h.lugar}` : null,
@@ -518,7 +528,8 @@ export function HabitosClient() {
                   <ToggleItem key={h.id} emoji={h.emoji} label={h.nombre}
                     sublabel={sublabel || undefined}
                     done={registroDone.has(h.id)} cargando={toggling.has(`reg-${h.id}`)}
-                    onToggle={() => toggleRegistro(h.id, "habito_custom")} />
+                    onToggle={() => toggleRegistro(h.id, "habito_custom")}
+                    onEdit={() => abrirEditar(h)} />
                 );
               })}
 
