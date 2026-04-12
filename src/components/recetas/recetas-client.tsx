@@ -640,7 +640,7 @@ function RecetaDetalle({ receta, onCerrar, onEliminar, onCalificar }: { receta: 
   const tiempoMatch = receta.contenido.match(/Tiempo[:\s]+(\d+\s*minutos?)/i);
   const porcionesMatch = receta.contenido.match(/Porciones[:\s]+(\d+)/i);
   return (
-    <div className="fixed inset-0 z-50 bg-background animate-slide-in-right overflow-y-auto">
+    <div className="fixed inset-0 z-[60] bg-background animate-slide-in-right overflow-y-auto">
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border">
         <div className="flex items-center gap-3 px-4 py-3">
           <button onClick={onCerrar} className="h-8 w-8 rounded-full bg-surface border border-border flex items-center justify-center text-foreground hover:bg-surface-2 transition-colors shrink-0"><ArrowLeft className="h-4 w-4" /></button>
@@ -676,7 +676,7 @@ function RecetaDetalle({ receta, onCerrar, onEliminar, onCalificar }: { receta: 
         </div>
         {receta.calificacion && <span className="text-xs text-muted-foreground">{receta.calificacion}/5</span>}
       </div>
-      <div className="px-4 py-4 pb-16">{formatearContenido(receta.contenido)}</div>
+      <div className="px-4 py-4 pb-8">{formatearContenido(receta.contenido)}</div>
     </div>
   );
 }

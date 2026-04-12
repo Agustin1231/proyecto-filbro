@@ -592,7 +592,7 @@ function RutinaGuiada({
   const bloques = Array.from(new Set(ejercicios.map((e) => e.bloque)));
 
   return (
-    <div className="fixed inset-0 z-50 bg-background overflow-y-auto animate-slide-in-right">
+    <div className="fixed inset-0 z-[60] bg-background overflow-y-auto animate-slide-in-right">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border">
         <div className="flex items-center gap-3 px-4 py-3">
